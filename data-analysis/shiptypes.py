@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 path = os.path.join(os.path.expanduser("~"), "nextcloud-znes", "KlimaSchiff",)
 
-
 type_mapper = pd.read_excel(
     os.path.join(path, "Ship_Type_Nagel.xlsx",), index_col=0,
 )
@@ -16,9 +15,12 @@ name_mapper = pd.read_excel(
     index_col=0,
 ).to_dict()["Name ShipType"]
 
+ships[ships["TYPENAME"] == "Container Ship"]["TYPE"].unique()
+
 ships = pd.read_csv(
     os.path.join(path, "Data", "VESSELFINDER", "MDB-data-complete-area.csv",)
 )
+
 
 
 def add_type(row,):
