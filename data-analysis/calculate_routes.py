@@ -70,6 +70,7 @@ index = pd.IntervalIndex.from_arrays(
     .shift(-1)["Speed [m/second]"]
     .fillna(40)
     .values,
+    closed="left"
 )
 multiindex = pd.MultiIndex.from_product(
     [model_table.index.unique(), index], names=["type", "v_class"]
