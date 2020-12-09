@@ -1,0 +1,17 @@
+{
+  "raw_data": "klimaschiff/raw_data",
+  "intermediate_data": "klimaschiff/intermediate_data",
+  "result_data": "klimaschiff/result_data",
+  "helmcom": {
+    "subset": "imo",
+    "sep": ";",
+    "datetimeformat": "%d/%m/%Y %H:%M:%S",
+    "datecol": "timestamp_pretty"
+  },
+  "vesselfinder": {
+    "subset": "IMO",
+    "sep": ",",
+    "datetimeformat": "%Y-%m-%d %H:%M:%S",
+    "datecol": "DATE TIME (UTC)"
+  }
+}
