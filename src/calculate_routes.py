@@ -1,5 +1,6 @@
 import functools
 import os
+import json
 
 import numpy as np
 import pandas as pd
@@ -7,60 +8,52 @@ from pandas.tseries.offsets import DateOffset
 from shapely.geometry import Point
 import geopandas
 
-from helpers import haversine
-
+from src.helpers import haversine
+from sklearn.metrics import mean_squared_error
 
 dataset = "vesselfinder"
 
-config = {
-    "helmcom": {
-        "input": "klimaschiff/data",
-        "subset": "imo",
-        "sep": ";",
-        "datetimeformat": "%d/%m/%Y %H:%M:%S",
-        "datecol": "timestamp_pretty",
-    },
-    "vesselfinder": {
-        "inputdata": "klimaschiff/data",
-        "subset": "IMO",
-        "sep": ",",
-        "datetimeformat": "%Y-%m-%d %H:%M:%S",
-        "datecol": "DATE TIME (UTC)",
-    },
-}
+with open("config.json") as file:
+    config = json.load(file)
 
 # data path with original intput data
 datapath = os.path.join(
-    os.path.expanduser("~"), config[dataset]["inputdata"], dataset
+    os.path.expanduser("~"), config["intermediate_data"]
 )
 
 # path to store data
-result_path = os.path.join(
-    os.path.expanduser("~"), config[dataset]["inputdata"], "processed"
+intermediate_path = os.path.join(
+    os.path.expanduser("~"), config["intermediate_data"]
 )
 
-
-
-
 df = pd.read_csv(
-    os.path.join(result_path, "helcom_201501_processed_small.csv"),
+    os.path.join(datapath, "vesselfinder_201501-reduced.csv"),
     index_col=0,
     dtype={"IMO": np.int32},
     engine="c",
 )
+
 df["DATE TIME (UTC)"] = pd.to_datetime(df["DATE TIME (UTC)"])
 
+imo_numbers = df["IMO"].unique()
+
 df.rename(
-    columns={"DATE TIME (UTC)": "date", "LATITUDE": "lat", "LONGITUDE": "lon"},
+    columns={
+        "DATE TIME (UTC)": "date",
+        "LATITUDE": "lat",
+        "LONGITUDE": "lon",
+        "SPEED": "speed",
+        "IMO": "imo",
+    },
     inplace=True,
 )
 
-imo_numbers = df["IMO"].unique()
 
 # read model and create ship / interval-index for lookup
 model_table = pd.read_csv(
     "emission_model/test-model.csv", sep=";", skiprows=1, index_col=[0]
 )
+
 index = pd.IntervalIndex.from_arrays(
     left=model_table.iloc[0:101]["Speed [m/second]"].values,
     right=model_table.iloc[0:101]
@@ -76,7 +69,8 @@ model_table = model_table.set_index(multiindex)
 
 
 def emission_model(ship_type, emission_type, row):
-
+    """
+    """
     if ship_type is None:
         raise ValueError("Missing ship_type!")
     if emission_type is None:
@@ -86,10 +80,10 @@ def emission_model(ship_type, emission_type, row):
 
 
 ship_routes = pd.DataFrame()
-for i in imo_numbers[0:1]:
+for i in imo_numbers[0:100]:
     # select all rows with imo number i
     # if int(i) in [9443566]:
-    temp_df = df[df["IMO"] == i]
+    temp_df = df[df["imo"] == i]
 
     # sort values by time
     temp_df = temp_df.sort_values(by="date", ascending=True)
@@ -109,7 +103,7 @@ for i in imo_numbers[0:1]:
     temp_df["tdiff"] = temp_df["date"].diff().dt.total_seconds()
 
     # calculate avg. speed based on distance an time-diff in m/s
-    temp_df["speed"] = temp_df["dist"] / temp_df["tdiff"]
+    temp_df["speed_calc"] = temp_df["dist"] / temp_df["tdiff"]
 
     # temp_df["dist"] = temp_df["dist"].shift(-1)
     temp_df.dropna(inplace=True)
@@ -119,7 +113,7 @@ for i in imo_numbers[0:1]:
 
     temp_df.drop(temp_df.loc[temp_df["tdiff"] < 300].index, inplace=True)
 
-    temp_df.drop(temp_df.loc[temp_df["speed"] > 30].index, inplace=True)
+    temp_df.drop(temp_df.loc[temp_df["speed_calc"] > 30].index, inplace=True)
 
     # set date index
     temp_df = temp_df.set_index("date")
@@ -155,13 +149,13 @@ for i in imo_numbers[0:1]:
     temp_df[["lon", "lat"]] = temp_df[["lon", "lat"]].interpolate()
 
     # create speed for resample data
-    temp_df[["speed", "IMO"]] = temp_df[["speed", "IMO"]].fillna(
+    temp_df[["speed_calc", "imo"]] = temp_df[["speed", "imo"]].fillna(
         method="ffill"
     )
     temp_df.to_csv("interpolate.csv")
 
     # look up emissions (TODO: replace with function)
-    temp_df["emission"] = temp_df["speed"].apply(
+    temp_df["emission"] = temp_df["speed_calc"].apply(
         functools.partial(
             emission_model,
             "Tanker_Handy_Max_Tier_II",
@@ -170,7 +164,14 @@ for i in imo_numbers[0:1]:
     )
 
     ship_routes = pd.concat([ship_routes, temp_df])
-    #
+
+
+rms = np.sqrt(
+    mean_squared_error(ship_routes[["speed"]].fillna(0), ship_routes[["speed_calc"]])
+)
+
+ship_routes.to_csv(os.path.join(intermediate_path, "ship_routes.csv"))
+
 # for i in range(1,32):
 #     ship_routes[ship_routes.index.dayofyear==i]
 # temp_df[temp_df["lon"] == np.nan]
