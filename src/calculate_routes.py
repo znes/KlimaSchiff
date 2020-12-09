@@ -1,48 +1,45 @@
+import functools
 import os
-import json
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
 from pandas.tseries.offsets import DateOffset
-
-import functools
-
-
-from shapely.geometry import Point, Polygon, LineString
-from shapely_geojson import dumps, Feature, FeatureCollection
+from shapely.geometry import Point
 import geopandas
-from geopy import distance
 
-basepath = "klimaschiff/data"
-subset = "IMO"  # IMO
-sep = ","  # ;
-dataset = "vesselfinder"  # vesselfinder
-datetimeformat = "%Y-%m-%d %H:%M:%S"  # "%d/%m/%Y %H:%M:%S" #
-datecol = "DATE TIME (UTC)"  # "timestamp_pretty"
+from helpers import haversine
 
-datapath = os.path.join(os.path.expanduser("~"), basepath, dataset)
-result_path = os.path.join(os.path.expanduser("~"), basepath, "processed")
 
-# vectorized haversine function
-def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
-    """
-    slightly modified version: of http://stackoverflow.com/a/29546836/2901002
+dataset = "vesselfinder"
 
-    Calculate the great circle distance between two points
-    on the earth (specified in decimal degrees or in radians)
+config = {
+    "helmcom": {
+        "input": "klimaschiff/data",
+        "subset": "imo",
+        "sep": ";",
+        "datetimeformat": "%d/%m/%Y %H:%M:%S",
+        "datecol": "timestamp_pretty",
+    },
+    "vesselfinder": {
+        "inputdata": "klimaschiff/data",
+        "subset": "IMO",
+        "sep": ",",
+        "datetimeformat": "%Y-%m-%d %H:%M:%S",
+        "datecol": "DATE TIME (UTC)",
+    },
+}
 
-    All (lat, lon) coordinates must have numeric dtypes and be of equal length.
+# data path with original intput data
+datapath = os.path.join(
+    os.path.expanduser("~"), config[dataset]["inputdata"], dataset
+)
 
-    """
-    if to_radians:
-        lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
+# path to store data
+result_path = os.path.join(
+    os.path.expanduser("~"), config[dataset]["inputdata"], "processed"
+)
 
-    a = (
-        np.sin((lat2 - lat1) / 2.0) ** 2
-        + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2.0) ** 2
-    )
 
-    return earth_radius * 2 * np.arcsin(np.sqrt(a))
 
 
 df = pd.read_csv(
@@ -70,7 +67,7 @@ index = pd.IntervalIndex.from_arrays(
     .shift(-1)["Speed [m/second]"]
     .fillna(40)
     .values,
-    closed="left"
+    closed="left",
 )
 multiindex = pd.MultiIndex.from_product(
     [model_table.index.unique(), index], names=["type", "v_class"]
@@ -78,9 +75,7 @@ multiindex = pd.MultiIndex.from_product(
 model_table = model_table.set_index(multiindex)
 
 
-def emission_model(
-    ship_type, emission_type, row
-):
+def emission_model(ship_type, emission_type, row):
 
     if ship_type is None:
         raise ValueError("Missing ship_type!")
@@ -116,7 +111,7 @@ for i in imo_numbers[0:1]:
     # calculate avg. speed based on distance an time-diff in m/s
     temp_df["speed"] = temp_df["dist"] / temp_df["tdiff"]
 
-    #temp_df["dist"] = temp_df["dist"].shift(-1)
+    # temp_df["dist"] = temp_df["dist"].shift(-1)
     temp_df.dropna(inplace=True)
 
     # set speed to 0 where speed is lower that 0.1 m/s
@@ -139,10 +134,12 @@ for i in imo_numbers[0:1]:
     temp_df["tdiff"] = temp_df["tdiff"].fillna(method="ffill")
     temp_df.to_csv("resampled.csv")
     x = temp_df[
-        (temp_df["tdiff"] > 3600 * 24) # maximum 1 hour to interpolate
+        (temp_df["tdiff"] > 3600 * 24)  # maximum 1 hour to interpolate
         | (
-            (temp_df["tdiff"] > 300) # or 300 m at the outer area
-            & ((temp_df["lon"] < -4.9) | (temp_df["lon"] > 14.9)) # clip geo-bounds
+            (temp_df["tdiff"] > 300)  # or 300 m at the outer area
+            & (
+                (temp_df["lon"] < -4.9) | (temp_df["lon"] > 14.9)
+            )  # clip geo-bounds
         )
     ]
 
@@ -165,9 +162,11 @@ for i in imo_numbers[0:1]:
 
     # look up emissions (TODO: replace with function)
     temp_df["emission"] = temp_df["speed"].apply(
-        functools.partial(emission_model,
+        functools.partial(
+            emission_model,
             "Tanker_Handy_Max_Tier_II",
-            "CO2 (Well to tank) [kg]")
+            "CO2 (Well to tank) [kg]",
+        )
     )
 
     ship_routes = pd.concat([ship_routes, temp_df])

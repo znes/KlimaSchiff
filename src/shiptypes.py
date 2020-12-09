@@ -15,12 +15,9 @@ name_mapper = pd.read_excel(
     index_col=0,
 ).to_dict()["Name ShipType"]
 
-ships[ships["TYPENAME"] == "Container Ship"]["TYPE"].unique()
-
 ships = pd.read_csv(
     os.path.join(path, "Data", "VESSELFINDER", "MDB-data-complete-area.csv",)
 )
-
 
 
 def add_type(row,):
@@ -39,6 +36,7 @@ def add_type(row,):
         stype,
         sname,
     )
+
 
 ships[["FSGTYPE", "Class",]] = ships.apply(
     add_type, axis=1, result_type="expand",
@@ -66,7 +64,7 @@ ax = (
             ),
         ]
     )
-    .count()["IMO"] # random columns selection to get the count...
+    .count()["IMO"]  # random columns selection to get the count...
     .unstack()
     .plot(kind="barh", stacked=True, cmap=plt.get_cmap("coolwarm_r"))
 )
@@ -98,7 +96,7 @@ ax = (
             ),
         ]
     )
-    .count()["IMO"] # random columns selection to get the count...
+    .count()["IMO"]  # random columns selection to get the count...
     .unstack()
     .plot(kind="bar", stacked=False, cmap=plt.get_cmap("coolwarm"))
 )
