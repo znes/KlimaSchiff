@@ -6,7 +6,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def preprocess(dataset, config):
+def preprocess(dataset, config, debug=False):
     """ Read raw data files for specified dataset and remove obsolete columns, rename
     and write to disk.
     """
@@ -28,7 +28,7 @@ def preprocess(dataset, config):
         df = pd.read_csv(
             filecontent,
             sep=config[dataset]["sep"],
-            nrows=20000,
+            #nrows=20000,
             usecols=["DATE TIME (UTC)", "LONGITUDE", "LATITUDE", "IMO", "SPEED"],
         )
 

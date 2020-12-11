@@ -36,7 +36,7 @@ def calculate_routes(dataset, config):
             path,
             index_col=0,
             dtype={"IMO": np.int32},
-            engine="python",
+            engine="c",
         )
         df["date"] = pd.to_datetime(df["date"])
 
