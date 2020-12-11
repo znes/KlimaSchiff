@@ -9,7 +9,7 @@ from pandas.tseries.offsets import DateOffset
 from shapely.geometry import Point
 import geopandas
 
-from src.helpers import haversine
+from helpers import haversine
 from sklearn.metrics import mean_squared_error
 
 

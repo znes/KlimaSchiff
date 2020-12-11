@@ -1,8 +1,8 @@
 import os
 import json
 import logging
-from src.preprocess import preprocess
-from src.calculate_routes import calculate_routes
+from preprocess import preprocess
+from calculate_routes import calculate_routes
 
 
 logging.basicConfig(
