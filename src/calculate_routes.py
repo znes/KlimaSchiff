@@ -103,7 +103,7 @@ def calculate_routes(dataset, config):
             temp_df.dropna(inplace=True)
 
             # set speed to 0 where speed is lower that 0.1 m/s
-            temp_df["speed"][temp_df["speed"] < 0.1] = 0
+            temp_df.loc[temp_df["speed"] < 0.1, "speed"] = 0
 
             temp_df.drop(temp_df.loc[temp_df["tdiff"] < 300].index, inplace=True)
 
