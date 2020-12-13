@@ -74,7 +74,7 @@ def calculate_routes(dataset, config):
 
         ship_routes = pd.DataFrame()
         logging.info("Loop over ships by IMO number...")
-        for i in imo_numbers[0:10]:
+        for i in imo_numbers:
             # select all rows with imo number i
             # if int(i) in [9443566]:
             temp_df = df[df["imo"] == i]
