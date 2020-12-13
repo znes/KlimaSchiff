@@ -52,7 +52,7 @@ def calculate_routes(dataset, config):
             left=model_table.iloc[0:101]["Speed [m/second]"].values,
             right=model_table.iloc[0:101]
             .shift(-1)["Speed [m/second]"]
-            .fillna(40)
+            .fillna(50)
             .values,
             closed="left",
         )
@@ -144,6 +144,9 @@ def calculate_routes(dataset, config):
             temp_df[["speed_calc", "imo"]] = temp_df[["speed", "imo"]].fillna(
                 method="ffill"
             )
+
+            temp_df.drop(temp_df.loc[temp_df["speed_calc"] > 40].index, inplace=True)
+
 
             # look up emissions (TODO: replace with function)
             temp_df["emission"] = temp_df["speed_calc"].apply(
