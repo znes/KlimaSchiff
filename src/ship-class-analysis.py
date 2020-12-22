@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -56,7 +57,6 @@ dwt_classes = {
     "Bulker": [(0,50e3), (50e3, 100e3),  (100e3, float("+inf"))]
 }
 
-
 df = pd.DataFrame()
 for name, cutter in dwt_classes.items():
     ships_by_class = ships[ships["Class"] == name]
@@ -68,9 +68,6 @@ for name, cutter in dwt_classes.items():
         )
     ).mean()
 
-
     classes[["GT", "DWT", "LOA", "LPP", "BEAM", "DRAUGHT"]].to_csv(
         os.path.join(path, "{}-mean-by-dwt.csv".format(name))
         )
-
-#ships.loc[(ships["GT"] >100000) & (ships["Class"] == "Cargo")]

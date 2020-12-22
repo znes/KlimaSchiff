@@ -1,0 +1,16 @@
+name,weighttype,weightclass,year,class
+tanker_small_tier_1,DWT,0;34999,2000,4
+tanker_medium_tier_1,DWT,35000;44999,2000,4
+tanker_large_tier_1,DWT,50000;+inf,2000,4
+tanker_small_tier_2,DWT,0;34999,2011,4
+tanker_medium_tier_2,DWT,35000;44999,2011,4
+tanker_large_tier_2,DWT,50000;+inf,2011,4
+tanker_small_tier_3,DWT,0;34999,2021,4
+tanker_medium_tier_3,DWT,35000;44999,2021,4
+tanker_large_tier_3,DWT,50000;+inf,2021,4
+roro_carrier_1,GT,0;39999,2000,1
+roro_carrier_medium_tier_1,GT,40000;+inf,2011,1
+roro_carrier_small_tier_2,GT,0;39999,2021,1
+roro_carrier_medium_tier_2,GT,40000;+inf,2000,1
+roro_carrier_small_tier_3,GT,0;39999,2011,1
+roro_carrier_medium_tier_3,GT,40000;+inf,2021,1
