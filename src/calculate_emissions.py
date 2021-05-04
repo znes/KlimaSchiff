@@ -12,32 +12,35 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-m
+
 # ax = plt.plot(x, y_plot, linewidth=2,color="red")
 # plt.scatter(x, y, marker="o")
 def create_model(
     ship_class="Tanker_Handy_Max_Tier_II",
     emission_type="CO2 (Well to tank) [kg]",
-):
+    model_data):
+
     x = model_data.loc[ship_class]["Speed [m/second]"]
     y = model_data.loc[ship_class][emission_type]
     X = x[:, np.newaxis]
     model = make_pipeline(PolynomialFeatures(degree=5), Ridge())
     model.fit(X, y)
+
     return model
 
 
 def create_models(model_data):
     models = {
-        (ship_class, emission_type): create_model(ship_class, emission_type)
+        (ship_class, emission_type): create_model(ship_class, emission_type, model_data)
         for emission_type in model_data.columns[2:]
         for ship_class in model_data.index.unique()
     }
+
     return models
 
+
 def emissions_by_type(
-    filepath, emission_type, ship_classes, ships_per_ship_class, models
-):
+    filepath, emission_type, ship_classes, ships_per_ship_class, models):
     """
     """
     df = pd.read_csv(filepath, usecols=["imo", "speed_calc"])
@@ -58,12 +61,12 @@ datapath = os.path.join(
     os.path.expanduser("~"),
     config["intermediate_data"],
     dataset,
-    "ship_routes",
+    "ship_routes"
 )
 
 filepaths = [os.path.join(datapath, i) for i in os.listdir(datapath)]
 
-with open('emission_model/ships_per_class.pkl', 'rb') as f:
+with open('emission_model/imo_by_type.pkl', 'rb') as f:
     ships_per_ship_class = pickle.load(f)
 
 emissions_by_type(filepaths[0],

@@ -18,7 +18,7 @@ name_mapper = pd.read_excel(
 ).to_dict()["fsg_name"]
 
 ships = pd.read_csv(
-    os.path.join(path, "data", "VESSELFINDER", "MDB-data-complete-area.csv",)
+    os.path.join(path, "data", "MDB-data-complete-area.csv",)
 )
 
 def add_type(row,):
@@ -50,11 +50,13 @@ gt_classes = {
    "Cruise Liner": [(0, 25e3), (25e3, float("+inf"))],
    "Diverse": [(0, 2e3), (2e3, float("+inf"))],
    "Cargo": [(0, 50e3), (50e3, 100e3), (100e3, float("+inf"))],
-   "Container": [(0, 50e3), (50e3, 100e3), (100e3, float("+inf"))]
+   "Container": [(0, 17.5e3), (17.5e3, 55e3), (55e3, 145e3), (145e3, float("+inf"))]
    }
 
 dwt_classes = {
-    "Bulker": [(0,50e3), (50e3, 100e3),  (100e3, float("+inf"))]
+    "Bulker": [(0,50e3), (50e3, 100e3),  (100e3, float("+inf"))],
+    "Cargo": [(0, 12e3), (12e3, 20e3), (20e3, float("+inf"))],
+
 }
 
 df = pd.DataFrame()
@@ -71,3 +73,10 @@ for name, cutter in dwt_classes.items():
     classes[["GT", "DWT", "LOA", "LPP", "BEAM", "DRAUGHT"]].to_csv(
         os.path.join(path, "{}-mean-by-dwt.csv".format(name))
         )
+
+ax = ships[ships["Class"] == "Cargo"]["DWT"].hist(bins=100)
+ax.set_title("Histogram for DRAUGHT of Container ships")
+ax.set_xlabel("DRAUGHT")
+ax.set_ylabel("Number of ships")
+ax.set_xlim(0, 60000)
+plt.savefig(os.path.join(path, "Histogram DWT cargo-zoom.pdf"))
