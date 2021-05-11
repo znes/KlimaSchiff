@@ -18,7 +18,7 @@ name_mapper = pd.read_excel(
 ).to_dict()["fsg_name"]
 
 ships = pd.read_csv(
-    os.path.join(path, "data", "VESSELFINDER", "MDB-data-complete-area.csv",)
+    os.path.join(path, "data", "MDB-data-complete-area.csv",)
 )
 
 # tc (typeclass mapper)
@@ -49,15 +49,21 @@ ships[["FSGTYPE", "Class",]] = ships.apply(
 )
 ships = ships.drop(ships.loc[ships["Class"] == "rausnehmen"].index, axis=0)
 
+#ships[(ships["BUILT"] != 0) & (ships["STATUS"] == "IN SERVICE/COMMISSION")].min()
+
 # extract ships per class and write to pickle
 imo_by_type = {}
+ships["shipclass"] = None
 for index, row in tc_mapper.iterrows():
-    imo_by_type[index] = ships[
-        (row["class"] == ships["FSGTYPE"]) &
-        (row["year"] <= ships["BUILT"]) &
-        (ships[row["weighttype"]] > float(row["weightclass"].split(";")[0])) &
-        (ships[row["weighttype"]] <= float(row["weightclass"].split(";")[1]))
-        ]["IMO"]
+    if not "_FS" in index:
+        imo_by_type[index] = ships[
+            (row["class"] == ships["FSGTYPE"]) &
+            (ships["BUILT"] >= row["year_lb"]) &
+            (ships["BUILT"] <= row["year_ub"]) &
+            (ships[row["weighttype"]] > float(row["weightclass_lb"])) &
+            (ships[row["weighttype"]] <= float(row["weightclass_ub"]))
+            ]["IMO"]
+
 
 with open('emission_model/imo_by_type.pkl', 'wb') as f:
     pickle.dump(imo_by_type, f)

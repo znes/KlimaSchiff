@@ -6,15 +6,16 @@ import pandas as pd
 
 from shapely.geometry import box, mapping
 
-from functools import partial
+#from functools import partial
 from rasterio.enums import MergeAlg
 
-from geocube.api.core import make_geocube
-from geocube.rasterize import rasterize_image
+#from geocube.api.core import make_geocube
+#from geocube.rasterize import rasterize_image
 
 from datacube.utils import geometry
 
 from geojson import GeometryCollection
+import xarray as xr
 
 import matplotlib.pyplot as plt
 from rasterio.features import rasterize
@@ -28,95 +29,89 @@ datapath = os.path.join(
     os.path.expanduser("~"),
     config["intermediate_data"],
     dataset,
-    "ship_routes"
+    "ship_routes",
 )
 
 filepaths = [os.path.join(datapath, i) for i in os.listdir(datapath)]
 
 # path to store data
-result_data = os.path.join(
-    os.path.expanduser("~"), config["result_data"]
-)
+result_data = os.path.join(os.path.expanduser("~"), config["result_data"])
 
-df = pd.read_csv(filepaths[0], index_col=0, parse_dates=True) #, nrows=1000000)
+df = pd.read_csv(
+    filepaths[0], index_col=0, parse_dates=True
+)  # , nrows=1000000)
 
 geodf = gpd.GeoDataFrame(
-    df, crs="epsg:4326",
-    geometry=gpd.points_from_xy(df.lon, df.lat))
+    df, crs="epsg:4326", geometry=gpd.points_from_xy(df.lon, df.lat)
+)
 
 # reproject to geo dataframe right LCC
-crs="+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs"
-lcc_df = geodf.to_crs(crs)
-
-# select data from one hour of year
-lcc_hour = lcc_df.loc[(lcc_df.index.dayofyear == 1) & (lcc_df.index.hour == 0)]
-
-# raster data -----------------------------------------------------------------
-json_box = mapping(box(0, 0, 12*196, 12*196))
+crs = "epsg:4326" # LCC "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs"
+resolution = (0.05, 0.065) # (-12, 12) for LCC
+json_box = mapping(box(-6, 48, 15, 70)) #  0, 0, 12 * 196, 12 * 196 for LCC
 json_box["crs"] = {"properties": {"name": crs}}
 
-geo_grid = make_geocube(
-    vector_data=lcc_hour,
-    measurements=['speed_calc', 'speed'],
-    geom=json.dumps(json_box), # minx, miny, maxx, maxy
-    #output_crs="+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs",
-    resolution=(-12, 12),
-    rasterize_function=partial(rasterize_image, merge_alg=MergeAlg.add),
-    fill=0,
-    #align=(0, 0)
-)
-geo_grid["speed"].plot()
-geo_grid
+if "lcc" in crs:
+    geodf = geodf.to_crs(crs)
 
 
-# raster alternative ---------------------------------------------------------
-# but this is just what geocube does under the hood...
-crs="+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs"
-geopoly = geometry.Geometry(
-    mapping(box(0, 0, 12*196, 12*196)),
-    crs=crs
-)
-geobox = geometry.GeoBox.from_geopolygon(
-            geopoly, (-12, 12), crs=crs
-        )
-# test as geojson in lon/lat
-json_poly = GeometryCollection([geopoly.to_crs(crs="EPSG:4326").json])
+geopoly = geometry.Geometry(json_box, crs=crs)
+geobox = geometry.GeoBox.from_geopolygon(geopoly, resolution, crs=crs)
 
-#aff = transform.from_bounds(-1275, -1000, -1275+12*195, -1000+12*195, 195, 195)
-arr = rasterize(
-    zip(lcc_df.iloc[1:100000].geometry.apply(mapping).values, lcc_df.iloc[1:100000].speed_calc),
-    out_shape=(geobox.height, geobox.width),
-    transform=geobox.affine,
-    merge_alg=MergeAlg.add,
-    all_touched=True
-)
+emissions = {}
+year = []
+daysofyear = geodf.index.dayofyear.unique()[0:3]
+for day in daysofyear:
 
-fig, ax = plt.subplots()
-im = ax.imshow(pd.DataFrame(arr).clip(upper=3000).values)
-cbar = ax.figure.colorbar(im, ax=ax)
-cbar.ax.set_ylabel("Emission", rotation=-90, va="bottom")
+    emis_day = geodf.loc[(geodf.index.dayofyear == day)]
 
+    arr = rasterize(
+        zip(
+            emis_day.geometry.apply(mapping).values,
+            emis_day.speed_calc,
+        ),
+        out_shape=(geobox.height, geobox.width),
+        transform=geobox.affine,
+        merge_alg=MergeAlg.add,
+        all_touched=True,
+    )
+    year.append(arr)
 
-#-----------------------------------------
-# check with EPSG:
-# geopoly = geometry.Geometry(
-#     mapping(box(-6, 48, 15, 70)),
-#     crs="EPSG:4326"
-# )
-# json_poly = GeometryCollection([geopoly.json])
-#
-# aff = transform.from_bounds(-6, 48, 15, 70, 196, 196)
-# arr = rasterize(
-#     zip(geodf.iloc[0:100000].geometry.apply(mapping).values, geodf.iloc[0:100000].speed_calc),
-#     out_shape=(196, 196),
-#     transform=aff,
-#     merge_alg=MergeAlg.add,
-#     all_touched=True
-# )
+da = xr.DataArray(
+    year,
+    dims=["day", "lat", "lon"],
+    coords=[daysofyear,range(1, geobox.height+1),range(1, geobox.width+1)] )
+da.attrs = {"var_dsec": "Model species CO2", "long_name": "CO2", "units": "kg/day"}
+da.to_netcdf("emissions.nc")
+
+#emissions[str(day)] = da
+#ds = ds.assign_coords({"TSTEP": 1, "LAY": 1})
+#ds = ds.expand_dims({"TSTEP": 1, "LAY": 1})
+#ds = xr.Dataset(emissions)
+
 # fig, ax = plt.subplots()
-# im = ax.imshow(pd.DataFrame(arr).clip(upper=300).values
-# )
+# im = ax.imshow(pd.DataFrame(arr).clip(upper=300).values)
 # cbar = ax.figure.colorbar(im, ax=ax)
-# cbar.ax.set_ylabel("Emission", rotation=-90, va="bottom")
+#cbar.ax.set_ylabel("Emission", rotation=-90, va="bottom")
 
-#lcc.iloc[0:100000].to_file("data/test.shp", driver="ESRI Shapefile")
+
+#
+# import gdal
+# import osr
+#
+# srs = osr.SpatialReference()
+# srs.ImportFromEPSG(4326)
+# dst_filename = 'day1.tiff'
+# x_pixels = geobox.width  # number of pixels in y
+# y_pixels = geobox.height  # number of pixels in x
+# driver = gdal.GetDriverByName('GTiff')
+# dataset = driver.Create(dst_filename, x_pixels, y_pixels, 1, gdal.GDT_Float32)
+# dataset.GetRasterBand(1).WriteArray(arr)
+# dataset.SetGeoTransform(geobox.affine.to_gdal())
+# dataset.SetProjection(srs.ExportToWkt())
+# dataset.FlushCache()
+# dataset=None
+
+#
+f = xr.open_dataset("data/case2016_A_PublicPower2016")
+f["CO"]
