@@ -1,6 +1,5 @@
 import functools
 import os
-import json
 import logging
 
 import numpy as np
@@ -28,25 +27,23 @@ def create_ship_route(temp_df):
     temp_df: pd.DataFrame()
         Processed dataframe with 5min ship routes
     """
-    # select all rows with imo number i
-    # if int(i) in [9443566]
 
     # sort values by time
-    temp_df = temp_df.sort_values(by="date", ascending=True)
+    temp_df = temp_df.sort_values(by="datetime", ascending=True)
 
     # calculate distance between two points of  consecutive timesteps in m
     temp_df["dist"] = (
         haversine(
-            temp_df.lat.shift(),
-            temp_df.lon.shift(),
-            temp_df["lat"],
-            temp_df["lon"],
+            temp_df.lat.shift().values,
+            temp_df.lon.shift().values,
+            temp_df["lat"].values,
+            temp_df["lon"].values,
         )
         * 1000
     )
 
     # get time in seconds
-    temp_df["tdiff"] = temp_df["date"].diff().dt.total_seconds()
+    temp_df["tdiff"] = temp_df["datetime"].diff().dt.total_seconds()
 
     # calculate avg. speed based on distance an time-diff in m/s
     temp_df["speed_calc"] = temp_df["dist"] / temp_df["tdiff"]
@@ -55,16 +52,16 @@ def create_ship_route(temp_df):
     temp_df.dropna(inplace=True)
 
     # set speed to 0 where speed is lower that 0.1 m/s
-    temp_df.loc[temp_df["speed"] < 0.1, "speed"] = 0
+    #temp_df.loc[temp_df["speed_calc"] < 0.1, "speed_calc"] = 0
 
-    temp_df.drop(temp_df.loc[temp_df["tdiff"] < 300].index, inplace=True)
-
-    temp_df.drop(temp_df.loc[temp_df["speed_calc"] > 30].index, inplace=True)
+    # temp_df = temp_df.loc[
+    #     (temp_df["tdiff"] > 300) |
+    #     (temp_df["speed_calc"] < 30)]
 
     # set date index
-    temp_df = temp_df.set_index("date")
+    temp_df = temp_df.set_index("datetime")
 
-    x = temp_df[(temp_df["tdiff"] > 3600 * 12)]
+    #x = temp_df[(temp_df["tdiff"] > 3600 * 12)]
 
     # resample to 5min data
     temp_df = temp_df.resample("5min").mean()
@@ -72,11 +69,11 @@ def create_ship_route(temp_df):
     temp_df["tdiff"] = temp_df["tdiff"].fillna(method="ffill")
 
     x = temp_df[
-        (temp_df["tdiff"] > 3600 * 24)  # maximum 1 hour to interpolate
+        (temp_df["tdiff"] > 3600 * 24)  # maximum 24 hours to interpolate
         | (
-            (temp_df["tdiff"] > 300)  # or 300 m at the outer area
+            (temp_df["dist"] > 300)  # or 300 m at the outer area
             & (
-                (temp_df["lon"] < -4.9) | (temp_df["lon"] > 14.9)
+                temp_df["lon"] < -4.9
             )  # clip geo-bounds
         )
     ]
@@ -93,7 +90,7 @@ def create_ship_route(temp_df):
     temp_df[["lon", "lat"]] = temp_df[["lon", "lat"]].interpolate()
 
     # create speed for resample data
-    temp_df[["speed_calc", "imo"]] = temp_df[["speed", "imo"]].fillna(
+    temp_df[["speed_calc", "imo"]] = temp_df[["speed_calc", "imo"]].fillna(
         method="ffill"
     )
 
@@ -101,60 +98,78 @@ def create_ship_route(temp_df):
 
     return temp_df
 
-def calculate_routes(dataset, config):
+def calculate_routes(config):
     """ Calculate the ship routes
     """
     # data path with original intput data
     datapath = os.path.join(
-        os.path.expanduser("~"), config["intermediate_data"], dataset, "reduced",
+        os.path.expanduser("~"), config["merged"]
     )
 
     # path to store data
     intermediate_path = os.path.join(
-        os.path.expanduser("~"), config["intermediate_data"], dataset, "ship_routes"
+        os.path.expanduser("~"), config["intermediate_data"], "ship_routes"
     )
+    if not os.path.exists(intermediate_path):
+        os.makedirs(intermediate_path)
 
     files = os.listdir(datapath)
 
-    logging.info("Start looping over all files in {}".format(datapath))
+    logging.info("Start looping over all raw-data files in {} to generate routes.".format(datapath))
     for file in files:
         path = os.path.join(datapath, file)
-        logging.info("Read preprocessed file {}".format(file))
+        logging.info("Read preprocessed file {}.".format(datapath))
         df = pd.read_csv(
             path,
-            index_col=0,
-            dtype={"IMO": np.int32},
+            dtype={"imo": np.int32},
             engine="c",
+            #nrows=10000,
         )
-        df["date"] = pd.to_datetime(df["date"])
+
+        df["datetime"] = pd.to_datetime(df["datetime"])
 
         imo_numbers = df["imo"].unique()
 
-        ship_routes = pd.DataFrame()
-
-        logging.info("Loop over ships by IMO number...")
-
-        for i in imo_numbers[1:1000]:
-            temp_df = df[df["imo"] == i]
-            ship_route = create_ship_route(temp_df)
-            ship_routes = pd.concat([ship_routes, ship_route])
-        number_nans = ship_routes["speed_calc"].isna().sum()
-        ship_routes = ship_routes.dropna(subset=["speed_calc"])
-        logging.info("Dropped {} rows with NaN in shiproutes.".format(number_nans))
-
-        logging.info("Calculate RMS for speed.")
-        rms = np.sqrt(
-            mean_squared_error(ship_routes[["speed"]].fillna(0), ship_routes[["speed_calc"]])
-        )
-        logging.info("RMS error of speed is {}".format(rms))
+        #ship_routes = pd.DataFrame()
 
         if not os.path.exists(intermediate_path):
             os.makedirs(intermediate_path)
-        outputpath = os.path.join(intermediate_path, "ship_routes-" + file)
-        logging.info("Write ship routes to {}.".format(outputpath))
-        ship_routes.to_csv(outputpath)
+        outputpath = os.path.join(intermediate_path, "ship_routes_" + file)
+
+        ship_routes = []
+        logging.info("Loop over ships by IMO number and writing results to {}.".format(outputpath))
+        for i in imo_numbers:
+            temp_df = df[df["imo"] == i]
+            ship_route = create_ship_route(temp_df)
+            ship_route = ship_route.dropna(subset=["speed_calc"])
+            ship_routes.append(ship_route)
+
+        pd.concat(ship_routes).to_csv(outputpath)
+
+            #ship_routes = pd.concat([ship_routes, ship_route])
+
+        #number_nans = ship_routes["speed_calc"].isna().sum()
+        #ship_routes = ship_routes.dropna(subset=["speed_calc"])
+        #logging.info("Dropped {} rows with NaN in shiproutes.".format(number_nans))
+
+        # logging.info("Calculate RMS for speed.")
+        # rms = np.sqrt(
+        #     mean_squared_error(ship_routes[["speed"]].fillna(0), ship_routes[["speed_calc"]])
+        # )
+        # logging.info("RMS error of speed is {}".format(rms))
 
 
+if __name__ == "__main__":
+
+    import json
+    from logger import logger
+
+    logging.info("Start data processing...")
+
+    with open("config.json") as file:
+        config = json.load(file)
+
+    calculate_routes(config)
 
 # for j in range(1, 32):
 #     ship_routes[(ship_routes.index.dayofyear==j)]

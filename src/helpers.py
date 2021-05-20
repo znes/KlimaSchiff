@@ -25,6 +25,7 @@ def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     All (lat, lon) coordinates must have numeric dtypes and be of equal length.
 
     """
+
     if to_radians:
         lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
 

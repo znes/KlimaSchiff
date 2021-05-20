@@ -1,4 +1,4 @@
-#import functools
+ #import functools
 import os
 import json
 import logging
@@ -59,7 +59,7 @@ def create_model(
     return model
 
 
-def create_models(model_data, emission_types):
+def create_models(model_data, emission_types=None):
     """ Creates all models for all ship classes in model data and all
     emission_types provided.
 
@@ -69,7 +69,7 @@ def create_models(model_data, emission_types):
         s. create model
     emissions_types: list
         list with names of emissions (string) which are `model_data` columns
-        If is None, columns for 2:end from `model_data` are used 
+        If is None, columns for 2:end from `model_data` are used
 
     Returns
     -------
@@ -94,21 +94,30 @@ def create_models(model_data, emission_types):
 #     return None
 
 
-def emissions_by_type(
-    routes, emission_type, ship_classes, ships_per_ship_class, models):
+def emissions_by_type_and_class(
+    routes, emission_types, ship_classes, ships_per_ship_class, models):
     """
     """
+    emissions = {}
     for ship_class in ship_classes:
+
+        # TODO: Check if ship_class exists if not log warning!
         ship_imo_numbers = ships_per_ship_class[ship_class]
         x = routes.loc[routes["imo"].isin(ship_imo_numbers)]
-        routes[emission_type] = models[(ship_class, emission_type)].predict(
-            x[:, np.newaxis]
-        )
-    return routes
+
+        if not x.empty:
+            for emission_type in emission_types:
+                x.loc[:, emission_type] = models[(ship_class, emission_type)].predict(
+                    x["speed_calc"][:, np.newaxis]
+                    )
+            emissions[ship_class] = x
+        else:
+            emissions[ship_class] = None
+    return emissions
 
 
 def read_routes(filepath):
-    routes = pd.read_csv(filepath, usecols=["imo", "speed_calc"])
+    routes = pd.read_csv(filepath) # usecols=["imo", "speed_calc"]
     nans =routes.imo.isna().sum()
     if nans > 0:
         logging.warning("`{}` NANs in ships routes removed from file: `{}`".format(nans, filepath))
@@ -121,15 +130,24 @@ def read_routes(filepath):
 #----------------- workflow
 
 # get  path of files with routes
-dataset = "vesselfinder"
 with open("config.json") as file:
     config = json.load(file)
+
 datapath = os.path.join(
     os.path.expanduser("~"),
     config["intermediate_data"],
-    dataset,
     "ship_routes"
 )
+
+outputpath = os.path.join(
+    os.path.expanduser("~"),
+    config["intermediate_data"],
+    "ship_emissions"
+)
+
+if not os.path.exists(outputpath):
+    os.makedirs(outputpath)
+
 filepaths = [os.path.join(datapath, i) for i in os.listdir(datapath)]
 
 # get gict with mapper for imo-number to model
@@ -142,62 +160,14 @@ model_data = pd.read_csv(
 
 models = create_models(model_data)
 
-routes = read_routes(filepaths[0])
 
-emissions = emissions_by_type(routes,
-                  ship_classes=["Tanker_Handy_Max_Tier_II"],
-                  emission_type="CO2 (Well to tank) [kg]",
-                  ships_per_ship_class=ships_per_ship_class,
-                  models=models)
+for filepath in filepaths:
+    routes = read_routes(filepath)
 
-#
-#
-# import time
-# start = time.process_time()
-# elapsed_time = time.process_time() - start
-
-# def create_emission_model_table():
-#     # read model and create ship / interval-index for lookup
-#     logging.info("Create lookup emission model file")
-#     model_table = pd.read_csv(
-#         "emission_model/test-model.csv", sep=";", skiprows=1, index_col=[0]
-#     )
-#
-#     index = pd.IntervalIndex.from_arrays(
-#         left=model_table.iloc[0:101]["Speed [m/second]"].values,
-#         right=model_table.iloc[0:101]
-#         .shift(-1)["Speed [m/second]"]
-#         .fillna(50)
-#         .values,
-#         closed="left",
-#     )
-#     multiindex = pd.MultiIndex.from_product(
-#         [model_table.index.unique(), index], names=["type", "v_class"]
-#     )
-#     model_table = model_table.set_index(multiindex)
-#
-#     return model_table
-# def emission_model(model_table, ship_type, emission_type, row):
-#     """ Function for pandas rowwise apply look-up
-#     """
-#     if ship_type is None:
-#         raise ValueError("Missing ship_type!")
-#     if emission_type is None:
-#         raise ValueError("Missing emission type!")
-#
-#     try:
-#         return  model_table.loc[ship_type].loc[row][emission_type]
-#     except KeyError:
-#         logging.error("Key error in emission model with row: {}".format(row))
-#         return np.nan
-#
-# def calc_emission(temp_df, model_table):
-#     # look up emissions (TODO: replace with function)
-#     temp_df["emission"] = temp_df["speed_calc"].apply(
-#         functools.partial(
-#             emission_model,
-#             model_table,
-#             "Tanker_Handy_Max_Tier_II",
-#             "CO2 (Well to tank) [kg]",
-#     )
-#         )
+    emissions = emissions_by_type_and_class(routes,
+                      ship_classes=[i for i in model_data.index.unique() if not "_FS" in i],
+                      emission_types=model_data.columns[2:18],
+                      ships_per_ship_class=ships_per_ship_class,
+                      models=models)
+    outputfile = os.path.join(outputpath, os.path.basename(filepath).replace("ship_routes", "ship_emissions"))
+    pd.concat(emissions.values()).sort_index().to_csv(outputfile, index=False)
