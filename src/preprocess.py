@@ -105,7 +105,7 @@ if __name__ == "__main__":
     import json
     from logger import logger
 
-    logging.info("Start data processing...")
+    logging.info("Start data pre processing...")
 
     with open("config.json") as file:
         config = json.load(file)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     datasets = ["vesselfinder", "helcom"]
     #
     for d in datasets:
-        logging.info("Start preprocessing files for dataset `{}`".format(d))
+        logging.info("Read and reduce dataset `{}`".format(d))
         reduce(d, config)
-
+    
     merge(config)

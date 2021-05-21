@@ -12,8 +12,6 @@ from helpers import haversine
 from sklearn.metrics import mean_squared_error
 
 
-
-
 def create_ship_route(temp_df):
     """ Creates ship route from raw data
 
@@ -42,21 +40,18 @@ def create_ship_route(temp_df):
         * 1000
     )
 
+
+
     # get time in seconds
     temp_df["tdiff"] = temp_df["datetime"].diff().dt.total_seconds()
 
     # calculate avg. speed based on distance an time-diff in m/s
     temp_df["speed_calc"] = temp_df["dist"] / temp_df["tdiff"]
 
+    #temp_df.to_csv("raw.csv", mode="a", header=False)
+
     # temp_df["dist"] = temp_df["dist"].shift(-1)
     temp_df.dropna(inplace=True)
-
-    # set speed to 0 where speed is lower that 0.1 m/s
-    #temp_df.loc[temp_df["speed_calc"] < 0.1, "speed_calc"] = 0
-
-    # temp_df = temp_df.loc[
-    #     (temp_df["tdiff"] > 300) |
-    #     (temp_df["speed_calc"] < 30)]
 
     # set date index
     temp_df = temp_df.set_index("datetime")
@@ -65,6 +60,8 @@ def create_ship_route(temp_df):
 
     # resample to 5min data
     temp_df = temp_df.resample("5min").mean()
+
+    #temp_df.to_csv("resampled.csv", mode="a", header=False)
 
     temp_df["tdiff"] = temp_df["tdiff"].fillna(method="ffill")
 
@@ -86,13 +83,18 @@ def create_ship_route(temp_df):
             inplace=True,
         )
 
+    #temp_df.to_csv("clean.csv", mode="a",header=False)
     # interpolate lon/lat to get the positions of the ships
     temp_df[["lon", "lat"]] = temp_df[["lon", "lat"]].interpolate()
+
+    #temp_df.to_csv("interpolate.csv", mode="a", header=False)
 
     # create speed for resample data
     temp_df[["speed_calc", "imo"]] = temp_df[["speed_calc", "imo"]].fillna(
         method="ffill"
     )
+
+    #temp_df.to_csv("filled.csv", mode="a",header=False)
 
     temp_df.drop(temp_df.loc[temp_df["speed_calc"] > 40].index, inplace=True)
 
@@ -146,7 +148,17 @@ def calculate_routes(config):
 
         pd.concat(ship_routes).to_csv(outputpath)
 
-            #ship_routes = pd.concat([ship_routes, ship_route])
+        # ship_routes = pd.concat(ship_routes)
+        # ship_routes = ship_routes.reset_index()
+        # ship_routes.drop("datetime", axis=1, inplace=True)
+        # ship_routes["geometry"] = ship_routes.apply(
+        #     lambda x: Point((float(x.lon), float(x.lat))), axis=1
+        # )
+        #
+        # geodf = geopandas.GeoDataFrame(ship_routes, geometry="geometry")
+        # # proj WGS84
+        # geodf.crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+        # geodf.to_file("data/100-raw.shp", driver="ESRI Shapefile")
 
         #number_nans = ship_routes["speed_calc"].isna().sum()
         #ship_routes = ship_routes.dropna(subset=["speed_calc"])
@@ -170,21 +182,3 @@ if __name__ == "__main__":
         config = json.load(file)
 
     calculate_routes(config)
-
-# for j in range(1, 32):
-#     ship_routes[(ship_routes.index.dayofyear==j)]
-#
-# # temp_df[temp_df["lon"] == np.nan]
-# #
-# # ship_routes = ship_routes[(ship_routes.index.dayofyear==1) & (ship_routes.index.hour == 0)]
-#
-# ship_routes["geometry"] = ship_routes.apply(
-#     lambda x: Point((float(x.lon), float(x.lat))), axis=1
-# )
-# ship_routes = ship_routes.reset_index()
-# ship_routes.drop("date", axis=1, inplace=True)
-#
-# geodf = geopandas.GeoDataFrame(ship_routes, geometry="geometry")
-# # proj WGS84
-# geodf.crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-# geodf.to_file("data/100-200-interpolate.shp", driver="ESRI Shapefile")
