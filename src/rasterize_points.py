@@ -46,10 +46,21 @@ resolution = (
     0.065,
 )  # (-12, 12) for LCC
 
+bounding_box = box(-4, 48, 30, 68,)
 json_box = mapping(
-    box(-4, 48, 30, 68,)
+    bounding_box
 )  #  0, 0, 12 * 196, 12 * 196 for LCC minx miny maxx maxy
 json_box["crs"] = {"properties": {"name": crs}}
+
+
+# for lcc reference points
+lon, lat = bounding_box.exterior.coords.xy
+_geodf = gpd.GeoDataFrame(crs="epsg:4326", geometry=gpd.points_from_xy(lon, lat),
+    )
+_geodf = _geodf.to_crs("+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs")
+
+
+
 
 geopoly = geometry.Geometry(json_box, crs=crs,)
 geobox = geometry.GeoBox.from_geopolygon(geopoly, resolution, crs=crs,)

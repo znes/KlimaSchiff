@@ -10,6 +10,7 @@ def reduce(dataset, config, debug=False):
     """ Read raw data files for specified dataset and remove obsolete columns, rename
     and write to disk.
     """
+
     datapath = os.path.join(
         os.path.expanduser("~"), config["raw_data"], dataset
     )
@@ -21,9 +22,9 @@ def reduce(dataset, config, debug=False):
     files = os.listdir(datapath)
 
     for file in files:
+        logging.info("Read and reduce dataset `{}`".format(file))
         filepath = os.path.join(datapath, file)
         filecontent = open(filepath)
-        logger.info("Read file {}".format(filepath))
         df = pd.read_csv(
             filecontent,
             index_col=0,
@@ -113,7 +114,6 @@ if __name__ == "__main__":
     datasets = ["vesselfinder", "helcom"]
     #
     for d in datasets:
-        logging.info("Read and reduce dataset `{}`".format(d))
         reduce(d, config)
-    
+
     merge(config)
