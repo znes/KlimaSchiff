@@ -27,5 +27,6 @@
               "LONGITUDE": "lon",
               "IMO": "imo"
           }
-  }
+  },
+  "resample": 5
 }
