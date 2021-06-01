@@ -12,7 +12,7 @@ from helpers import haversine
 from sklearn.metrics import mean_squared_error
 
 
-def create_ship_route(temp_df):
+def create_ship_route(temp_df, resample="5min"):
     """ Creates ship route from raw data
 
     Parameters
@@ -59,7 +59,7 @@ def create_ship_route(temp_df):
     #x = temp_df[(temp_df["tdiff"] > 3600 * 12)]
 
     # resample to 5min data
-    temp_df = temp_df.resample("5min").mean()
+    temp_df = temp_df.resample(str(resample) + "min").mean()
 
     #temp_df.to_csv("resampled.csv", mode="a", header=False)
 
@@ -94,9 +94,12 @@ def create_ship_route(temp_df):
         method="ffill"
     )
 
-    #temp_df.to_csv("filled.csv", mode="a",header=False)
+    # sometimes there seems to a an error in lon/lat which causes
+    # high distances at short time => very high speed, remove these values here
+    # or set to zero, to keep intact X-min timeindex!?
+    temp_df = temp_df[temp_df["speed_calc"] <= 15]
 
-    temp_df.drop(temp_df.loc[temp_df["speed_calc"] > 40].index, inplace=True)
+    #temp_df.to_csv("filled.csv", mode="a",header=False)
 
     return temp_df
 
@@ -142,7 +145,7 @@ def calculate_routes(config):
         logging.info("Loop over ships by IMO number and writing results to {}.".format(outputpath))
         for i in imo_numbers:
             temp_df = df[df["imo"] == i]
-            ship_route = create_ship_route(temp_df)
+            ship_route = create_ship_route(temp_df, resample=config["resample"])
             ship_route = ship_route.dropna(subset=["speed_calc"])
             ship_routes.append(ship_route)
 

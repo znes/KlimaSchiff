@@ -7,8 +7,11 @@ from preprocess import reduce, merge
 
 
 @click.group()
-def cli():
-    pass
+@click.option('-p',     '--preprocess', type=bool, default=False, help='If raw data needs to be preprocessed first')
+@click.pass_context
+def cli(ctx, preprocess):
+    ctx.ensure_object(dict)
+    ctx.obj['PREPROCESS'] = preprocess
 
 @cli.command()
 def preprocess():
@@ -40,16 +43,14 @@ def rasterize():
     pass
 
 @cli.command()
-@click.option(
-    '--preprocess',
-    default=False, help='If raw data needs to be preprocessed first')
-def all(preprocess):
+@click.pass_context
+def all(ctx):
     """
     """
     with open("config.json") as file:
         config = json.load(file)
 
-    if preprocess:
+    if ctx.obj['PREPROCESS']:
         datasets = ["vesselfinder", "helcom"]
         for d in datasets:
             reduce(d, config)
@@ -63,4 +64,4 @@ def all(preprocess):
 
 if __name__ == "__main__":
     from logger import logger
-    cli()
+    cli(obj={})
