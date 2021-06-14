@@ -55,7 +55,7 @@ def plot_array(array, lower=0, upper=3000):
 
 def rasterize_points(
     config=None,
-    emission_types={"NOx [kg]": "NOx", "CO2 [kg]": "CO2"},
+    emission_types={"Fuel Consumption [kg]": "Fuel", "NOx [kg]": "NOX", "CO2 [kg]": "CO2"},
     #resolution=(-0.03, 0.05),
     #bbox=[-4, 50, 25, 65],
 ):
@@ -103,7 +103,7 @@ def rasterize_points(
     for emission_type in emission_types.keys():
         emissions_per_day = {}
         dates = []
-        for file in filepaths[0:1]:
+        for file in filepaths:
             df = pd.read_csv(
                 file, index_col=[0], parse_dates=True
             )  # , nrows=1000000)

@@ -179,7 +179,7 @@ def test_models():
     df.to_csv("emission_model/predicted-new.csv")
 #test_models()
 
-def calculate_emissions(config, columns=["NOx [kg]", "CO2 [kg]"]):
+def calculate_emissions(config, columns=["Fuel Consumption [kg]", "NOx [kg]", "CO2 [kg]"]):
     """
     """
     with open("config.json") as file:

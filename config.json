@@ -30,5 +30,5 @@
   },
   "resample": 5,
   "bounding_box": [-4, 50, 25, 65],
-  "resolution": [-0.03, 0.05]
+  "resolution": [-0.03, 0.02]
 }
