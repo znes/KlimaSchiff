@@ -51,7 +51,7 @@ def append_additional_emissions_to_lcpa():
             poa = 0.15 * energy_factor
             co = 0.54 * energy_factor
             ash = 0.01 * energy_factor
-            nmvoc = 0.18 * fuel_factor
+            nmvoc = 1.8 * fuel_factor
         else:
             bc = 0.03 * energy_factor
             poa = 0.01 * energy_factor
