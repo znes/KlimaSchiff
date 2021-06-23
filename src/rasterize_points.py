@@ -55,9 +55,19 @@ def plot_array(array, lower=0, upper=3000):
 
 def rasterize_points(
     config=None,
-    emission_types={"Fuel Consumption [kg]": "Fuel", "NOx [kg]": "NOX", "CO2 [kg]": "CO2"},
-    #resolution=(-0.03, 0.05),
-    #bbox=[-4, 50, 25, 65],
+    emission_types={
+        "SOx [kg]": "SO2",
+        "PM [kg]": "PM",
+        "NOx [kg]": "NOx",
+        "CO2 [kg]": "CO2",
+        "BC [kg]": "BC",
+        "ASH [kg]": "ASH",
+        "POA [kg]": "POA",
+        "CO [kg]": "CO",
+        "NMVOC [kg]": "NMVOC",
+    }
+    # resolution=(-0.03, 0.05),
+    # bbox=[-4, 50, 25, 65],
 ):
     """
     """
@@ -86,9 +96,7 @@ def rasterize_points(
 
     bounding_box = box(bbox[0], bbox[1], bbox[2], bbox[3])
 
-    json_box = mapping(
-        bounding_box
-    )  # minx miny maxx maxy
+    json_box = mapping(bounding_box)  # minx miny maxx maxy
 
     json_box["crs"] = {"properties": {"name": crs}}
 
@@ -103,10 +111,16 @@ def rasterize_points(
     for emission_type in emission_types.keys():
         emissions_per_day = {}
         dates = []
-        for file in filepaths:
+        for file in filepaths[0:1]:
             df = pd.read_csv(
                 file, index_col=[0], parse_dates=True
             )  # , nrows=1000000)
+
+            # add both engine types
+            df[emission_type] = (
+                df["Propulsion-" + emission_type]
+                + df["Electrical-" + emission_type]
+            )
 
             geodf = gpd.GeoDataFrame(
                 df,
@@ -172,5 +186,6 @@ def rasterize_points(
                 "sum": {"dtype": "float32"},
             },
         )
+
 
 rasterize_points()

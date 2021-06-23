@@ -82,7 +82,7 @@ def append_additional_emissions_to_lcpa():
     ] = df.apply(_add_emissions, axis=1, result_type="expand",)
 
     df.to_csv("emission_model/model.csv", sep=";")
-append_additional_emissions_to_lcpa()
+#append_additional_emissions_to_lcpa()
 
 #df = pd.read_csv("emission_model/model.csv", sep=";", index_col=[0,1])
 #df.groupby(level=0).apply(max)["Speed [m/second]"].to_csv("emission_model/max_speed_per_type.csv")
