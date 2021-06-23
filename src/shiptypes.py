@@ -28,6 +28,7 @@ tc_mapper = pd.read_csv(
     index_col=0
 )
 
+
 def add_type(row,):
     # import pdb; pdb.set_trace()
     if row["TYPE"] == "0":
@@ -59,11 +60,16 @@ for index, row in tc_mapper.iterrows():
     if not "_FS" in index:
         imo_by_type[index] = [i for i in ships[
             (row["class"] == ships["FSGTYPE"]) &
-            (ships["BUILT"] >= row["year_lb"]) &
-            (ships["BUILT"] <= row["year_ub"]) &
-            (ships[row["weighttype"]] > float(row["weightclass_lb"])) &
+            (ships["BUILT"] >= float(row["year_lb"])) &
+            (ships["BUILT"] <= float(row["year_ub"])) &
+            (ships[row["weighttype"]] >= float(row["weightclass_lb"])) &
             (ships[row["weighttype"]] <= float(row["weightclass_ub"]))
             ]["IMO"].to_dict().values()]
+
+flat_ls = []
+for i in imo_by_type.values():
+    for j in i:
+        flat_ls.append(j)
 
 with open("emission_model/imo_by_type.json", "w") as f:
     json.dump(imo_by_type, f)
