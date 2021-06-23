@@ -41,7 +41,6 @@ def create_ship_route(temp_df, resample="5min"):
     )
 
 
-
     # get time in seconds
     temp_df["tdiff"] = temp_df["datetime"].diff().dt.total_seconds()
 
@@ -93,6 +92,10 @@ def create_ship_route(temp_df, resample="5min"):
     temp_df[["speed_calc", "imo"]] = temp_df[["speed_calc", "imo"]].fillna(
         method="ffill"
     )
+
+
+    temp_df[temp_df["speed_calc"] <= config["drift_speed"]] = 0 # if ships are only drifting 
+
 
     # sometimes there seems to a an error in lon/lat which causes
     # high distances at short time => very high speed, remove these values here
