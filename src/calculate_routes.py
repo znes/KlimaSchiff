@@ -12,7 +12,7 @@ from helpers import haversine
 from sklearn.metrics import mean_squared_error
 
 
-def create_ship_route(temp_df, resample="5min"):
+def create_ship_route(temp_df, drift_speed=0.5, resample="5min"):
     """ Creates ship route from raw data
 
     Parameters
@@ -50,7 +50,9 @@ def create_ship_route(temp_df, resample="5min"):
     #temp_df.to_csv("raw.csv", mode="a", header=False)
 
     # temp_df["dist"] = temp_df["dist"].shift(-1)
-    temp_df.dropna(inplace=True)
+    temp_df.dropna(
+        inplace=True,
+        subset=["speed_calc", "tdiff", "dist", "lon", "imo"])
 
     # set date index
     temp_df = temp_df.set_index("datetime")
@@ -93,8 +95,8 @@ def create_ship_route(temp_df, resample="5min"):
         method="ffill"
     )
 
-
-    temp_df[temp_df["speed_calc"] <= config["drift_speed"]] = 0 # if ships are only drifting 
+    temp_df["speed_calc"] = temp_df["speed_calc"].apply(
+        lambda x: np.where(x < drift_speed, 0, x))
 
 
     # sometimes there seems to a an error in lon/lat which causes
@@ -126,7 +128,7 @@ def calculate_routes(config):
     logging.info("Start looping over all raw-data files in {} to generate routes.".format(datapath))
     for file in files:
         path = os.path.join(datapath, file)
-        logging.info("Read preprocessed file {}.".format(datapath))
+        logging.info("Read preprocessed file {}.".format(file))
         df = pd.read_csv(
             path,
             dtype={"imo": np.int32},
@@ -137,23 +139,26 @@ def calculate_routes(config):
         df["datetime"] = pd.to_datetime(df["datetime"])
 
         imo_numbers = df["imo"].unique()
+        logging.info("Unique IMO numbers in raw data file are: {}.".format(len(imo_numbers)))
 
         #ship_routes = pd.DataFrame()
-
         if not os.path.exists(intermediate_path):
             os.makedirs(intermediate_path)
         outputpath = os.path.join(intermediate_path, "ship_routes_" + file)
 
         ship_routes = []
-        logging.info("Loop over ships by IMO number and writing results to {}.".format(outputpath))
+        logging.info("Loop over ships by IMO number and writing results to: {}.".format(outputpath))
         for i in imo_numbers:
             temp_df = df[df["imo"] == i]
-            ship_route = create_ship_route(temp_df, resample=config["resample"])
+            ship_route = create_ship_route(temp_df,
+                drift_speed=config["drift_speed"],
+                resample=config["resample"])
             ship_route = ship_route.dropna(subset=["speed_calc"])
             ship_routes.append(ship_route)
 
-        pd.concat(ship_routes).to_csv(outputpath)
-
+        ship_routes_df = pd.concat(ship_routes)
+        ship_routes_df.to_csv(outputpath)
+        logging.info("Unique IMO numbers in routes are: {}".format(len(ship_routes_df["imo"].unique())))
         # ship_routes = pd.concat(ship_routes)
         # ship_routes = ship_routes.reset_index()
         # ship_routes.drop("datetime", axis=1, inplace=True)
