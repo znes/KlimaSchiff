@@ -3,6 +3,7 @@ import os
 import json
 import logging
 import pickle
+import zipfile
 
 import numpy as np
 import pandas as pd
@@ -58,7 +59,7 @@ def append_additional_emissions_to_lcpa():
             co = 0.54 * energy_factor
             ash = 0.01 * energy_factor
 
-            if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo"]):
+            if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
                 if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
                     nmvoc = 3.2 * fuel_factor
                 else:
@@ -301,6 +302,13 @@ def calculate_emissions(
         "emission_model/model.csv", sep=";", index_col=[0, 1]
     )
 
+
+    zipped_ship_routes = zipfile.ZipFile(
+            os.path.join(datapath, "ship_routes.zip"),
+            mode='w', compression=zipfile.ZIP_DEFLATED)
+
+
+
     for filepath in filepaths:
         routes = read_routes(filepath)
 
@@ -339,3 +347,8 @@ def calculate_emissions(
         pd.concat(emissions.values()).sort_index().to_csv(
             outputfile, index=False
         )
+
+        # Write to zip file
+        zipped_ship_routes.write(filepath, arcname=os.path.basename(filepath))
+        os.remove(filepath)
+    zipped_ship_routes.close()
