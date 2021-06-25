@@ -72,6 +72,7 @@ def rasterize_points(
     """
     """
     if config is None:
+        logging.info("No config file provided, trying to read...")
         with open("config.json") as file:
             config = json.load(file)
 
@@ -109,9 +110,10 @@ def rasterize_points(
     coords = affine_to_coords(geobox.affine, geobox.width, geobox.height)
 
     for emission_type in emission_types.keys():
+        logging.info("Rasterizing emissions for type: {}.".format(emission_type))
         emissions_per_day = {}
         dates = []
-        for file in filepaths[0:1]:
+        for file in filepaths:
             df = pd.read_csv(
                 file, index_col=[0], parse_dates=True
             )  # , nrows=1000000)
@@ -130,7 +132,6 @@ def rasterize_points(
 
             if "lcc" in crs:
                 geodf = geodf.to_crs(crs)
-
             arr = rasterize(
                 zip(
                     geodf.geometry.apply(mapping).values, geodf[emission_type],
@@ -175,7 +176,6 @@ def rasterize_points(
             "units": "degrees_north",
             "axis": "Y",
         }
-
         da.to_netcdf(
             os.path.join(
                 result_data, emission_types[emission_type] + ".nc"

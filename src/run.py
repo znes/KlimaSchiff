@@ -3,11 +3,12 @@ import json
 
 from calculate_routes import calculate_routes
 from calculate_emissions import calculate_emissions
+from rasterize_points import rasterize_points
 from preprocess import reduce, merge
 
 
 @click.group()
-@click.option('-p',     '--preprocess', type=bool, default=False, help='If raw data needs to be preprocessed first')
+@click.option('-p', '--preprocess', type=bool, default=False, help='If raw data needs to be preprocessed first')
 @click.pass_context
 def cli(ctx, preprocess):
     ctx.ensure_object(dict)
@@ -40,7 +41,19 @@ def emissions():
 def rasterize():
     with open("config.json") as file:
         config = json.load(file)
-    pass
+    rasterize_points(
+        config=config,
+        emission_types={
+        "SOx [kg]": "SO2",
+        "PM [kg]": "PM",
+        "NOx [kg]": "NOx",
+        "CO2 [kg]": "CO2",
+        "BC [kg]": "BC",
+        "ASH [kg]": "ASH",
+        "POA [kg]": "POA",
+        "CO [kg]": "CO",
+        "NMVOC [kg]": "NMVOC",
+    })
 
 @cli.command()
 @click.pass_context
@@ -61,6 +74,7 @@ def all(ctx):
 
     calculate_emissions(config)
 
+    rasterize_points(config=config)
 
 if __name__ == "__main__":
     from logger import logger
