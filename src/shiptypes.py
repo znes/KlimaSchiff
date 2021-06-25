@@ -2,30 +2,31 @@ import os
 import pandas as pd
 import pickle
 import json
-import numpy as np
-import matplotlib.pyplot as plt
 
-# - data preparation -----------------------------------------------------------
-path = os.path.join(os.path.expanduser("~"), "nextcloud-znes", "KlimaSchiff")
 
 type_mapper = pd.read_excel(
-    os.path.join(path, "ship_type", "Ship_Type_Nagel.xlsx",), index_col=0,
+    os.path.join("emission_model", "ship_type_fsg_mdb_mapper.xlsx"),
+    index_col=0,
 )
 
 name_mapper = pd.read_excel(
-    os.path.join(path, "ship_type", "Ship_Type_Nagel.xlsx",),
+    os.path.join("emission_model", "ship_type_fsg_mdb_mapper.xlsx"),
     sheet_name="FSG_ShipType",
     index_col=0,
 ).to_dict()["fsg_name"]
 
 ships = pd.read_csv(
-    os.path.join(path, "data", "MDB-data-complete-area.csv",)
+    os.path.join(
+        os.path.expanduser("~"),
+        "klimaschiff",
+        "raw_data",
+        "MDB-data-complete-area.csv",
+    )
 )
 
 # tc (typeclass mapper)
 tc_mapper = pd.read_csv(
-    os.path.join("emission_model", "ship_weightclass_mapper.csv"),
-    index_col=0
+    os.path.join("emission_model", "ship_weightclass_mapper.csv"), index_col=0
 )
 
 
@@ -58,24 +59,36 @@ ships = ships.drop(ships.loc[ships["Class"] == "rausnehmen"].index, axis=0)
 imo_by_type = {}
 for index, row in tc_mapper.iterrows():
     if not "_FS" in index:
-        imo_by_type[index] = [i for i in ships[
-            (row["class"] == ships["FSGTYPE"]) &
-            (ships["BUILT"] >= float(row["year_lb"])) &
-            (ships["BUILT"] <= float(row["year_ub"])) &
-            (ships[row["weighttype"]] >= float(row["weightclass_lb"])) &
-            (ships[row["weighttype"]] <= float(row["weightclass_ub"]))
-            ]["IMO"].to_dict().values()]
+        imo_by_type[index] = [
+            i
+            for i in ships[
+                (row["class"] == ships["FSGTYPE"])
+                & (ships["BUILT"] >= float(row["year_lb"]))
+                & (ships["BUILT"] <= float(row["year_ub"]))
+                & (ships[row["weighttype"]] >= float(row["weightclass_lb"]))
+                & (ships[row["weighttype"]] <= float(row["weightclass_ub"]))
+            ]["IMO"]
+            .to_dict()
+            .values()
+        ]
 
 flat_ls = []
 for i in imo_by_type.values():
     for j in i:
         flat_ls.append(j)
 
-with open("emission_model/imo_by_type.json", "w") as f:
-    json.dump(imo_by_type, f)
+# with open("emission_model/imo_by_type.json", "w") as f:
+#    json.dump(imo_by_type, f)
 
 # for manual testing:
 # ships[ships["IMO"] == imo_by_type["Car_Carrier_groesser_40000_GT__Tier_II"][4]]
+with open("config.json") as file:
+    config = json.load(file)
 
-with open('emission_model/imo_by_type.pkl', 'wb') as f:
+with open(
+    os.path.join(
+        os.path.expanduser("~"), config["processed"], "imo_by_type.pkl"
+    ),
+    "wb",
+) as f:
     pickle.dump(imo_by_type, f)

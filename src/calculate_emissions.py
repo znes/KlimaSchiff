@@ -295,7 +295,10 @@ def calculate_emissions(
     filepaths = [os.path.join(datapath, i) for i in os.listdir(datapath)]
 
     # get gict with mapper for imo-number to model
-    with open("emission_model/imo_by_type.pkl", "rb") as f:
+    imo_by_type = os.path.join(
+        os.path.expanduser("~"), config["processed"], "imo_by_type.pkl"
+    )
+    with open(imo_by_type, "rb") as f:
         ships_per_ship_class = pickle.load(f)
 
     model_data = pd.read_csv(
