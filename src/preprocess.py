@@ -55,15 +55,15 @@ def merge(config):
     """
     datapath = os.path.join(os.path.expanduser("~"), config["processed"])
 
-    months = [str(i).zfill(2) for i in range(1, 2)]
+    months = ["201412"] + [str(2015) + str(i).zfill(2)   for i in range(1, 13)]
 
     for month in months:
         logging.info("Merge month {}".format(str(months)))
         vessel_file = os.path.join(
-            datapath, "vesselfinder_2015" + month + "-reduced.csv"
+            datapath, "vesselfinder_" + month + "-reduced.csv"
         )
         helcom_file = os.path.join(
-            datapath, "helcom_2015" + month + "-reduced.csv"
+            datapath, "helcom_" + month + "-reduced.csv"
         )
 
         vessel_df = pd.read_csv(
