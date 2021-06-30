@@ -4,8 +4,7 @@ import json
 from calculate_routes import calculate_routes
 from calculate_emissions import calculate_emissions
 from rasterize_points import rasterize_points
-from preprocess import reduce, merge
-
+import preprocess as preprocess
 
 @click.group()
 @click.option('-p', '--preprocess', type=bool, default=False, help='If raw data needs to be preprocessed first')
@@ -15,15 +14,20 @@ def cli(ctx, preprocess):
     ctx.obj['PREPROCESS'] = preprocess
 
 @cli.command()
-def preprocess():
+def reduce():
     with open("config.json") as file:
         config = json.load(file)
 
     datasets = ["vesselfinder", "helcom"]
     for d in datasets:
-        reduce(d, config)
+        preprocess.reduce(d, config)
 
-    merge(config)
+@cli.command()
+def merge():
+    with open("config.json") as file:
+        config = json.load(file)
+
+    preprocess.merge(config)
 
 @cli.command()
 def routes():
