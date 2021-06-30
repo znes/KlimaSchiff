@@ -58,7 +58,7 @@ def merge(config):
     months = ["201412"] + [str(2015) + str(i).zfill(2)   for i in range(1, 13)]
 
     for month in months:
-        logging.info("Merge month {}".format(str(months)))
+        logging.info("Merge month {}".format(str(month)))
         vessel_file = os.path.join(
             datapath, "vesselfinder_" + month + "-reduced.csv"
         )
@@ -89,7 +89,7 @@ def merge(config):
         for day in vessel_df.index.day.unique():
             logging.info("Writing merged data for day {}".format(day))
             merged_filepath = os.path.join(
-                merged_dirpath, "2015" + month + str(day).zfill(2) + ".csv"
+                merged_dirpath, month + str(day).zfill(2) + ".csv"
             )
 
             vessel_df.loc[vessel_df.index.day == day].to_csv(merged_filepath)
