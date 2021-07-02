@@ -67,7 +67,7 @@ def create_ship_route(temp_df, drift_speed=0.5, resample="5min"):
     temp_df["tdiff"] = temp_df["tdiff"].fillna(method="ffill")
 
     x = temp_df[
-        (temp_df["tdiff"] > 3600 * 24)  # maximum 24 hours to interpolate
+        (temp_df["tdiff"] > 3600 * 48)  # maximum 24 hours to interpolate
         | (
             (temp_df["dist"] > 300)  # or 300 m at the outer area
             & (
