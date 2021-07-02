@@ -84,13 +84,13 @@ for i in imo_by_type.values():
 # ships[ships["IMO"] == imo_by_type["Car_Carrier_groesser_40000_GT__Tier_II"][4]]
 with open("config.json") as file:
     config = json.load(file)
-processed_path = os.path.join(os.path.expanduser("~"), config["processed"])
-if not os.path.exists(processed_path):
-    os.makedirs(processed_path)
 
 with open(
     os.path.join(
-        processed_path, "imo_by_type.pkl"
+        os.path.expanduser("~"),
+        "klimaschiff",
+        "raw_data",
+        "imo_by_type.pkl"
     ),
     "wb",
 ) as f:
