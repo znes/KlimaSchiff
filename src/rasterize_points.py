@@ -190,4 +190,4 @@ def rasterize_points(
                     "sum": {"dtype": "float32"},
                 },
             )
-rasterize_points()
+#rasterize_points()
