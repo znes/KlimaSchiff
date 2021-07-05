@@ -115,78 +115,79 @@ def rasterize_points(
         emissions_per_day = {}
         dates = []
         for file in filepaths:
-            df = pd.read_csv(
-                file, index_col=[0], parse_dates=True
-            )  # , nrows=1000000)
+            if "201501" in file:
+                df = pd.read_csv(
+                    file, index_col=[0], parse_dates=True
+                )  # , nrows=1000000)
 
-            # add both engine types
-            df[emission_type] = (
-                df["Propulsion-" + emission_type]
-                + df["Electrical-" + emission_type]
+                # add both engine types
+                df[emission_type] = (
+                    df["Propulsion-" + emission_type]
+                    + df["Electrical-" + emission_type]
+                )
+
+                geodf = gpd.GeoDataFrame(
+                    df,
+                    crs="epsg:4326",
+                    geometry=gpd.points_from_xy(df.lon, df.lat),
+                )
+
+                if "lcc" in crs:
+                    geodf = geodf.to_crs(crs)
+                logging.info("Rasterzing day {}".format(df.index[0].dayofyear))
+
+                arr = rasterize(
+                    zip(
+                        geodf.geometry.apply(mapping).values, geodf[emission_type],
+                    ),  # colums 7 is co2
+                    out_shape=(geobox.height, geobox.width,),
+                    transform=geobox.affine,
+                    merge_alg=MergeAlg.add,
+                    all_touched=True,
+                )
+
+                date = df.index[
+                    0
+                ].dayofyear  # df.index.date[0].strftime("%Y-%m-%d")
+                dates.append(date)
+                emissions_per_day[date] = arr
+
+            da = xr.DataArray(
+                [i for i in emissions_per_day.values()],
+                dims=["time", "lat", "lon",],
+                coords=[np.array(dates), coords["y"], coords["x"],],
             )
 
-            geodf = gpd.GeoDataFrame(
-                df,
-                crs="epsg:4326",
-                geometry=gpd.points_from_xy(df.lon, df.lat),
+            da = da.rename("sum")
+            da = da.astype("float64")
+            da.attrs = {"units": "kg d-1"}
+
+            da.coords["time"].attrs = {
+                "standard_name": "time",
+                "calendar": "proleptic_gregorian",
+                "units": "days since 2015-01-01",
+                "axis": "T",
+            }
+            da.coords["lon"].attrs = {
+                "standard_name": "longnitude",
+                "long_name": "longnitude",
+                "units": "degrees_east",
+                "axis": "X",
+            }
+            da.coords["lat"].attrs = {
+                "standard_name": "latitude",
+                "long_name": "latitude",
+                "units": "degrees_north",
+                "axis": "Y",
+            }
+            da.to_netcdf(
+                os.path.join(
+                    result_data, emission_types[emission_type] + ".nc"
+                ),  # write to shorter file name
+                encoding={
+                    "lat": {"dtype": "float32"},
+                    "lon": {"dtype": "float32"},
+                    "sum": {"dtype": "float32"},
+                },
             )
-
-            if "lcc" in crs:
-                geodf = geodf.to_crs(crs)
-            logging.info("Rasterzing day {}".format(df.index[0].dayofyear))
-
-            arr = rasterize(
-                zip(
-                    geodf.geometry.apply(mapping).values, geodf[emission_type],
-                ),  # colums 7 is co2
-                out_shape=(geobox.height, geobox.width,),
-                transform=geobox.affine,
-                merge_alg=MergeAlg.add,
-                all_touched=True,
-            )
-
-            date = df.index[
-                0
-            ].dayofyear  # df.index.date[0].strftime("%Y-%m-%d")
-            dates.append(date)
-            emissions_per_day[date] = arr
-
-        da = xr.DataArray(
-            [i for i in emissions_per_day.values()],
-            dims=["time", "lat", "lon",],
-            coords=[np.array(dates), coords["y"], coords["x"],],
-        )
-
-        da = da.rename("sum")
-        da = da.astype("float64")
-        da.attrs = {"units": "kg d-1"}
-
-        da.coords["time"].attrs = {
-            "standard_name": "time",
-            "calendar": "proleptic_gregorian",
-            "units": "days since 2015-01-01",
-            "axis": "T",
-        }
-        da.coords["lon"].attrs = {
-            "standard_name": "longnitude",
-            "long_name": "longnitude",
-            "units": "degrees_east",
-            "axis": "X",
-        }
-        da.coords["lat"].attrs = {
-            "standard_name": "latitude",
-            "long_name": "latitude",
-            "units": "degrees_north",
-            "axis": "Y",
-        }
-        da.to_netcdf(
-            os.path.join(
-                result_data, emission_types[emission_type] + ".nc"
-            ),  # write to shorter file name
-            encoding={
-                "lat": {"dtype": "float32"},
-                "lon": {"dtype": "float32"},
-                "sum": {"dtype": "float32"},
-            },
-        )
-#rasterize_points()
+rasterize_points()
