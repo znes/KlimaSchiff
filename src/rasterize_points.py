@@ -20,6 +20,7 @@ from rasterio.features import rasterize
 
 from datacube.utils import geometry
 
+logger = logging.getLogger(__name__)
 # from geocube.api.core import make_geocube
 # from geocube.rasterize import rasterize_image
 # from functools import partial
@@ -56,12 +57,12 @@ def plot_array(array, lower=0, upper=3000):
 def rasterize_points(
     config=None,
     emission_types={
+        "CO2 [kg]": "CO2",
         "SOx [kg]": "SO2",
         "PM [kg]": "PM",
         "NOx [kg]": "NOx",
-        "CO2 [kg]": "CO2",
-        "BC [kg]": "BC",
-        "ASH [kg]": "ASH",
+        "BC [kg]": "EC",
+        "ASH [kg]": "Ash",
         "POA [kg]": "POA",
         "CO [kg]": "CO",
         "NMVOC [kg]": "NMVOC",
@@ -132,6 +133,8 @@ def rasterize_points(
 
             if "lcc" in crs:
                 geodf = geodf.to_crs(crs)
+            logging.info("Rasterzing day {}".format(df.index[0].dayofyear))
+
             arr = rasterize(
                 zip(
                     geodf.geometry.apply(mapping).values, geodf[emission_type],
