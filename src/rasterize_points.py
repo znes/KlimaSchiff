@@ -115,7 +115,7 @@ def rasterize_points(
         emissions_per_day = {}
         dates = []
         for file in filepaths:
-            if "201501" in file:
+            if "201507" in file:
                 df = pd.read_csv(
                     file, index_col=[0], parse_dates=True
                 )  # , nrows=1000000)
@@ -145,10 +145,10 @@ def rasterize_points(
                     merge_alg=MergeAlg.add,
                     all_touched=True,
                 )
-
                 date = df.index[
                     0
-                ].dayofyear  # df.index.date[0].strftime("%Y-%m-%d")
+                ].dayofyear - 1 # -1 to start with 0
+                # df.index.date[0].strftime("%Y-%m-%d")
                 dates.append(date)
                 emissions_per_day[date] = arr
 
