@@ -152,42 +152,45 @@ def rasterize_points(
                 dates.append(date)
                 emissions_per_day[date] = arr
 
-            da = xr.DataArray(
-                [i for i in emissions_per_day.values()],
-                dims=["time", "lat", "lon",],
-                coords=[np.array(dates), coords["y"], coords["x"],],
-            )
+            else:
+                pass
 
-            da = da.rename("sum")
-            da = da.astype("float64")
-            da.attrs = {"units": "kg d-1"}
+        da = xr.DataArray(
+            [i for i in emissions_per_day.values()],
+            dims=["time", "lat", "lon",],
+            coords=[np.array(dates), coords["y"], coords["x"],],
+        )
 
-            da.coords["time"].attrs = {
-                "standard_name": "time",
-                "calendar": "proleptic_gregorian",
-                "units": "days since 2015-01-01",
-                "axis": "T",
-            }
-            da.coords["lon"].attrs = {
-                "standard_name": "longnitude",
-                "long_name": "longnitude",
-                "units": "degrees_east",
-                "axis": "X",
-            }
-            da.coords["lat"].attrs = {
-                "standard_name": "latitude",
-                "long_name": "latitude",
-                "units": "degrees_north",
-                "axis": "Y",
-            }
-            da.to_netcdf(
-                os.path.join(
-                    result_data, emission_types[emission_type] + ".nc"
-                ),  # write to shorter file name
-                encoding={
-                    "lat": {"dtype": "float32"},
-                    "lon": {"dtype": "float32"},
-                    "sum": {"dtype": "float32"},
-                },
-            )
+        da = da.rename("sum")
+        da = da.astype("float64")
+        da.attrs = {"units": "kg d-1"}
+
+        da.coords["time"].attrs = {
+            "standard_name": "time",
+            "calendar": "proleptic_gregorian",
+            "units": "Hours since 2015-01-01",
+            "axis": "T",
+        }
+        da.coords["lon"].attrs = {
+            "standard_name": "longnitude",
+            "long_name": "longnitude",
+            "units": "degrees_east",
+            "axis": "X",
+        }
+        da.coords["lat"].attrs = {
+            "standard_name": "latitude",
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "axis": "Y",
+        }
+        da.to_netcdf(
+            os.path.join(
+                result_data, emission_types[emission_type] + ".nc"
+            ),  # write to shorter file name
+            encoding={
+                "lat": {"dtype": "float32"},
+                "lon": {"dtype": "float32"},
+                "sum": {"dtype": "float32"},
+            },
+        )
 #rasterize_points()
