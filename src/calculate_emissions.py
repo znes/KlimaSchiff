@@ -55,20 +55,20 @@ def append_additional_emissions_to_lcpa():
             nmvoc = 1.8 * fuel_factor
         else:
             bc = 0.03 * energy_factor
-            poa = 0.1 * energy_factor
+            poa = 0.2 * energy_factor
             co = 0.54 * energy_factor
             ash = 0.01 * energy_factor
 
             if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
                 if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
-                    nmvoc = 3.2 * fuel_factor
+                    nmvoc = 0.6 * energy_factor # cruise mode
                 else:
-                    nmvoc = 8.6 * fuel_factor # cruise mode
+                    nmvoc = 1.8 * energy_factor # hotelling
             else:
                 if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
-                    nmvoc = 2.3 * fuel_factor
+                    nmvoc = 0.5 * energy_factor
                 else:
-                    nmvoc = 6.6 * fuel_factor
+                    nmvoc = 1.5 * energy_factor
 
         return (bc, ash, poa, co, nmvoc)
 
