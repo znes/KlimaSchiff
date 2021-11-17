@@ -139,7 +139,7 @@ def rasterize_points(
         dates = []
         for file in filepaths:
             print("Do file: {}".format(file))
-            # select only certain days 
+            # select only certain days
             if "201" in file:
                 df_day = pd.read_csv(
                     file, index_col=[0], parse_dates=True
@@ -195,7 +195,7 @@ def rasterize_points(
         da.coords["time"].attrs = {
             "standard_name": "time",
             "calendar": "proleptic_gregorian",
-            "units": "Hours since 2015-01-01",
+            "units": "Hours since 2014-12-01",
             "axis": "T",
         }
         da.coords["lon"].attrs = {
