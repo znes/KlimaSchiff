@@ -150,45 +150,47 @@ def rasterize_points(
                     df_day["Propulsion-" + emission_type]
                     + df_day["Electrical-" + emission_type]
                 )
+                for hour in range(0,24):
+                    df_hour = df_day[df_day.index.hour == hour]
 
-                geodf = gpd.GeoDataFrame(
-                    df,
-                    crs="epsg:4326",
-                    geometry=gpd.points_from_xy(df.lon, df.lat),
-                )
+                    geodf = gpd.GeoDataFrame(
+                        df_hour,
+                        crs="epsg:4326",
+                        geometry=gpd.points_from_xy(df_hour.lon, df_hour.lat),
+                    )
 
-                if "lcc" in crs:
-                    geodf = geodf.to_crs(crs)
-                logging.info("Rasterzing day {}".format(df.index[0].dayofyear))
+                    logging.info("Rasterzing day {} and hour {}".format(
+                        df_day.index[0].dayofyear, hour)
+                    )
+                    arr = rasterize(
+                        zip(
+                            geodf.geometry.apply(mapping).values,
+                            geodf[emission_type],
+                        ),  # colums 7 is co2
+                        out_shape=(geobox.height, geobox.width,),
+                        transform=geobox.affine,
+                        merge_alg=MergeAlg.add,
+                        all_touched=True,
+                    )
 
-                arr = rasterize(
-                    zip(
-                        geodf.geometry.apply(mapping).values, geodf[emission_type],
-                    ),  # colums 7 is co2
-                    out_shape=(geobox.height, geobox.width,),
-                    transform=geobox.affine,
-                    merge_alg=MergeAlg.add,
-                    all_touched=True,
-                )
-                date = df.index[
-                    0
-                ].dayofyear - 1 # -1 to start with 0
-                # df.index.date[0].strftime("%Y-%m-%d")
-                dates.append(date)
-                emissions_per_day[date] = arr
+                    date = (df_day.index[
+                        0
+                    ].dayofyear - 1) * 24 + hour # -1 to start with 0
 
+                    # df.index.date[0].strftime("%Y-%m-%d")
+                    dates.append(date)
+                    emissions_per_day[date] = arr
             else:
-                pass
-
+                logging.info("Filepath {} skipped, due to if.".format(file))
+        #import pdb; pdb.set_trace()
         da = xr.DataArray(
             [i for i in emissions_per_day.values()],
             dims=["time", "lat", "lon",],
             coords=[np.array(dates), coords["y"], coords["x"],],
         )
-
         da = da.rename("sum")
-        da = da.astype("float64")
-        da.attrs = {"units": "kg d-1"}
+        da = da.astype("float32")
+        da.attrs = {"units": "kg h-1"}
 
         da.coords["time"].attrs = {
             "standard_name": "time",
