@@ -48,17 +48,19 @@ categories = set(
     ["SOx", "NOx", "PM", "CO [kg]", "CO2", "ASH", "POA", "NMVOC", "BC"]
 )
 
-
 def correct_categories(cols):
     return [cat for col in cols for cat in categories if cat in col]
-
-
 df_sums = df_sums.T
 df_sums["component"] = correct_categories(df_sums.index)
 
-
 df_time = df_sums.reset_index().groupby("component").sum().T
+
+
 df_time_agg = df_time.reset_index().groupby("category").sum()
+df_time.columns.name = None
+df_time.index = df_time.index.set_levels(
+     [pd.to_datetime(df_time.index.levels[0]), df_time.index.levels[1]])
 
 ax = df_time_agg["CO2"].divide(1e9).plot(kind="bar")
 ax.set_ylabel("CO2 in Mio ton")
+ax.set_xlabel("Ship type")
