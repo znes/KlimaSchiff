@@ -27,8 +27,6 @@ def merge_lcpa_models(path="emission_model/lcpa-models"):
         lcpa = pd.concat([lcpa, _df])
     lcpa.to_csv("emission_model/lcpa_model.csv", sep=";")
     return lcpa
-
-
 # merge_lcpa_models()
 
 
@@ -47,30 +45,43 @@ def append_additional_emissions_to_lcpa():
         energy_factor = row["Energy [J]"] / 3.6e6 / 1e3
         fuel_factor = row["Fuel Consumption [kg]"]  / 1e3
 
-        if row.name[1] == "Electrical":
-            bc = 0.15 * energy_factor  # in g/KWh -> kg
-            poa = 0.15 * energy_factor
-            co = 0.54 * energy_factor
-            ash = 0.02 * 0.001 * fuel_factor
-            nmvoc = 0.4 * energy_factor
+
+        # for future scenarios apply different emission factors
+        if "FS" in row.name[0]:
+
+            bc=0
+            poa=0
+            co=0
+            ash=0
+            nmvoc=0
+
+            return (bc, ash, poa, co, nmvoc)
+
         else:
-            bc = 0.03 * energy_factor
-            poa = 0.2 * energy_factor
-            co = 0.54 * energy_factor
-            ash = 0.02 * 0.001 * fuel_factor
-
-            if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
-                if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
-                    nmvoc = 0.6 * energy_factor # cruise mode
-                else:
-                    nmvoc = 1.8 * energy_factor # hotelling
+            if row.name[1] == "Electrical":
+                bc = 0.15 * energy_factor  # in g/KWh -> kg
+                poa = 0.15 * energy_factor
+                co = 0.54 * energy_factor
+                ash = 0.02 * 0.001 * fuel_factor
+                nmvoc = 0.4 * energy_factor
             else:
-                if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
-                    nmvoc = 0.5 * energy_factor
-                else:
-                    nmvoc = 1.5 * energy_factor
+                bc = 0.03 * energy_factor
+                poa = 0.2 * energy_factor
+                co = 0.54 * energy_factor
+                ash = 0.02 * 0.001 * fuel_factor
 
-        return (bc, ash, poa, co, nmvoc)
+                if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
+                    if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
+                        nmvoc = 0.6 * energy_factor # cruise mode
+                    else:
+                        nmvoc = 1.8 * energy_factor # hotelling
+                else:
+                    if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
+                        nmvoc = 0.5 * energy_factor
+                    else:
+                        nmvoc = 1.5 * energy_factor
+
+            return (bc, ash, poa, co, nmvoc)
 
     df[
         [
@@ -83,7 +94,7 @@ def append_additional_emissions_to_lcpa():
     ] = df.apply(_add_emissions, axis=1, result_type="expand",)
 
     df.to_csv("emission_model/model.csv", sep=";")
-#append_additional_emissions_to_lcpa()
+
 
 #df = pd.read_csv("emission_model/model.csv", sep=";", index_col=[0,1])
 #df.groupby(level=0).apply(max)["Speed [m/second]"].to_csv("emission_model/max_speed_per_type.csv")

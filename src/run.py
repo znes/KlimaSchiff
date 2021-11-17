@@ -2,7 +2,7 @@ import click
 import json
 
 from calculate_routes import calculate_routes
-from calculate_emissions import calculate_emissions
+from calculate_emissions import calculate_emissions, append_additional_emissions_to_lcpa
 from rasterize_points import rasterize_points
 import preprocess as preprocess
 
@@ -39,6 +39,10 @@ def routes():
 def emissions():
     with open("config.json") as file:
         config = json.load(file)
+
+    # create up-to-date model file 
+    append_additional_emissions_to_lcpa()
+
     calculate_emissions(config)
 
 @cli.command()
