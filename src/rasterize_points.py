@@ -8,17 +8,20 @@ import xarray as xr
 import logging
 import matplotlib.pyplot as plt
 
+from datacube.utils import geometry
+
+import pyproj
 
 from shapely.geometry import (
     box,
     mapping,
 )
+from shapely.ops import transform
 
 from rasterio.enums import MergeAlg
 from rioxarray.rioxarray import affine_to_coords
 from rasterio.features import rasterize
 
-from datacube.utils import geometry
 
 logger = logging.getLogger(__name__)
 # from geocube.api.core import make_geocube
@@ -27,12 +30,23 @@ logger = logging.getLogger(__name__)
 # from logger import logger
 
 
-def get_lcc_bounds(bounding_box, to_shp=False):
+def get_lcc_bounds(bounding_box, input_crs="epsg:4326", to_shp=False):
     """
+    Usage
+    ------
+
+    with open("config.json") as file:
+        config = json.load(file)
+    bbox = config["bounding_box_lcc"]
+    get_lcc_bounds(
+            box(bbox[0], bbox[1], bbox[2], bbox[3]),
+            input_crs="+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=0 +x_0=0 +a=6370997 +b=6370997 +units=m +no_defs",
+            to_shp=True)
+
     """
     lon, lat = bounding_box.exterior.coords.xy
     geodf = gpd.GeoDataFrame(
-        crs="epsg:4326", geometry=gpd.points_from_xy(lon, lat),
+        crs=input_crs, geometry=gpd.points_from_xy(lon, lat),
     )
     geodf.drop(4, inplace=True)
     geodf.index = ["lower right", "upper right", "upper left", "lower left"]
@@ -43,6 +57,7 @@ def get_lcc_bounds(bounding_box, to_shp=False):
     if to_shp:
         geodf.to_file(driver="ESRI Shapefile", filename="area.shp")
     return geodf
+
 
 
 def plot_array(array, lower=0, upper=3000):
@@ -72,13 +87,16 @@ def rasterize_points(
 ):
     """
     """
+
     if config is None:
         logging.info("No config file provided, trying to read...")
         with open("config.json") as file:
             config = json.load(file)
 
-    resolution = config["resolution"]
-    bbox = config["bounding_box"]
+    # get resolution in lon/lat because rasterizing will be in epsg 4326
+    resolution = config["resolution_lonlat"]
+    # get the square box in LCC coordinates
+    bbox = config["bounding_box_lcc"]
 
     datapath = os.path.join(
         os.path.expanduser("~"), config["intermediate_data"], "ship_emissions",
@@ -93,14 +111,19 @@ def rasterize_points(
     if not os.path.exists(result_data):
         os.makedirs(result_data)
 
-    # reproject to geo dataframe right LCC
-    crs = "epsg:4326"  # LCC "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=1e+06 +x_0=1275000 +a=6370997 +b=6370997 +units=km +no_defs"
-
+    crs = "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=0 +x_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
+    out_crs = "EPSG:4326"
     bounding_box = box(bbox[0], bbox[1], bbox[2], bbox[3])
+
+    # reproject LCC to epsg:4326 i.e. lon/lat
+    project = pyproj.Transformer.from_crs(
+        pyproj.CRS(crs),
+        pyproj.CRS(out_crs), always_xy=True).transform
+    bounding_box = transform(project, bounding_box)
 
     json_box = mapping(bounding_box)  # minx miny maxx maxy
 
-    json_box["crs"] = {"properties": {"name": crs}}
+    json_box["crs"] = {"properties": {"name": out_crs}}
 
     geopoly = geometry.Geometry(json_box, crs=crs,)
     geobox = geometry.GeoBox.from_geopolygon(
@@ -115,15 +138,17 @@ def rasterize_points(
         emissions_per_day = {}
         dates = []
         for file in filepaths:
-            if "201507" in file:
-                df = pd.read_csv(
+            print("Do file: {}".format(file))
+            # select only certain days 
+            if "201" in file:
+                df_day = pd.read_csv(
                     file, index_col=[0], parse_dates=True
                 )  # , nrows=1000000)
 
                 # add both engine types
-                df[emission_type] = (
-                    df["Propulsion-" + emission_type]
-                    + df["Electrical-" + emission_type]
+                df_day[emission_type] = (
+                    df_day["Propulsion-" + emission_type]
+                    + df_day["Electrical-" + emission_type]
                 )
 
                 geodf = gpd.GeoDataFrame(

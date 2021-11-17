@@ -29,7 +29,9 @@
           }
   },
   "resample": 5,
-  "bounding_box": [-4, 50, 25, 65],
-  "resolution": [-0.03, 0.02],
+  "bounding_box_lcc": [-516000.000, -366000.000, 312000.000, 462000.000],
+  "bounding_box_lonlat": [-4, 50, 25, 65],
+  "resolution_lcc": [4000, 4000],
+  "resolution_lonlat": [0.037, 0.0665],
   "drift_speed":0.51444
 }
