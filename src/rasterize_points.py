@@ -136,10 +136,11 @@ def rasterize_points(
     for emission_type in emission_types.keys():
         logging.info("Rasterizing emissions for type: {}.".format(emission_type))
         emissions_per_day = {}
-        dates = []
+        timestamps = []
+        filepaths.sort()
         for file in filepaths:
-            print("Do file: {}".format(file))
-            # select only certain days
+            #print("Do file: {}".format(file))
+            # select only certain
             if "201" in file:
                 df_day = pd.read_csv(
                     file, index_col=[0], parse_dates=True
@@ -172,21 +173,19 @@ def rasterize_points(
                         merge_alg=MergeAlg.add,
                         all_touched=True,
                     )
-
-                    date = (df_day.index[
-                        0
-                    ].dayofyear - 1) * 24 + hour # -1 to start with 0
-
-                    # df.index.date[0].strftime("%Y-%m-%d")
-                    dates.append(date)
-                    emissions_per_day[date] = arr
+                    # hour = (df_day.index[
+                    #     0
+                    # ].dayofyear - 1) * 24 + hour # -1 to start with 0
+                    timestamp = df_hour.index.date[0].strftime("%Y-%m-%d-%H")
+                    timestamps.append(timestamp)
+                    emissions_per_day[timestamp] = arr
             else:
                 logging.info("Filepath {} skipped, due to if.".format(file))
         #import pdb; pdb.set_trace()
         da = xr.DataArray(
             [i for i in emissions_per_day.values()],
             dims=["time", "lat", "lon",],
-            coords=[np.array(dates), coords["y"], coords["x"],],
+            coords=[np.array(timestamps), coords["y"], coords["x"],],
         )
         da = da.rename("sum")
         da = da.astype("float32")
