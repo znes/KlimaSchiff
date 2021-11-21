@@ -189,8 +189,9 @@ def rasterize_points(
         da = xr.DataArray(
             [i for i in emissions_per_day.values()],
             dims=["time", "lat", "lon",],
-            coords=[np.array(timestamps), coords["y"], coords["x"],],
+            coords=[np.array(range(0,len(timestamps))), coords["y"], coords["x"],],
         )
+
         da = da.rename("sum")
         da = da.astype("float32")
         da.attrs = {"units": "kg h-1"}
