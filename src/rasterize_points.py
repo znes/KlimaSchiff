@@ -176,11 +176,15 @@ def rasterize_points(
                     # hour = (df_day.index[
                     #     0
                     # ].dayofyear - 1) * 24 + hour # -1 to start with 0
-                    timestamp = df_hour.index.date[0].strftime("%Y-%m-%d-%H")
+                    timestamp = df_hour.index[0].strftime("%Y-%m-%d-%H")
                     timestamps.append(timestamp)
                     emissions_per_day[timestamp] = arr
             else:
                 logging.info("Filepath {} skipped, due to if.".format(file))
+
+        if timestamps == sorted(timestamps, reverse=True):
+            logging.error("Order of dates is not ascending!")
+
         #import pdb; pdb.set_trace()
         da = xr.DataArray(
             [i for i in emissions_per_day.values()],
