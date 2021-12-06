@@ -30,7 +30,7 @@ def merge_lcpa_models(path="emission_model/lcpa-models"):
 # merge_lcpa_models()
 
 
-def append_additional_emissions_to_lcpa():
+def append_additional_emissions_to_lcpa(emissions="low"):
     """
     """
     df = pd.read_csv(
@@ -39,7 +39,7 @@ def append_additional_emissions_to_lcpa():
 
     max_speed = pd.read_csv("emission_model/max_speed_per_type.csv", index_col=0)
 
-    def _add_emissions(row,):
+    def _add_emissions(row, emissions):
         """
         """
         energy_factor = row["Energy [J]"] / 3.6e6 / 1e3
@@ -47,13 +47,40 @@ def append_additional_emissions_to_lcpa():
 
 
         # for future scenarios apply different emission factors
-        if "FS" in row.name[0]:
-
+        if "FS" in row.name[0] and emissions == "low":
             bc=0
             poa=0
             co=0
             ash=0
             nmvoc=0
+
+            return (bc, ash, poa, co, nmvoc)
+
+        elif "FS" in row.name[0] and emissions == "high":
+            # for "high" future scenario 0 for black carbon and ash,
+            # rest like SQ
+
+            bc=0
+            ash=0
+
+            if row.name[1] == "Electrical":
+                poa = 0.15 * energy_factor
+                co = 0.54 * energy_factor
+                nmvoc = 0.4 * energy_factor
+            else:
+                poa = 0.2 * energy_factor
+                co = 0.54 * energy_factor
+
+                if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
+                    if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
+                        nmvoc = 0.6 * energy_factor # cruise mode
+                    else:
+                        nmvoc = 1.8 * energy_factor # hotelling
+                else:
+                    if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
+                        nmvoc = 0.5 * energy_factor
+                    else:
+                        nmvoc = 1.5 * energy_factor
 
             return (bc, ash, poa, co, nmvoc)
 
@@ -91,10 +118,14 @@ def append_additional_emissions_to_lcpa():
             "CO [kg]",
             "NMVOC [kg]"
         ]
-    ] = df.apply(_add_emissions, axis=1, result_type="expand",)
+    ] = df.apply(
+        _add_emissions, axis=1, result_type="expand",
+        emissions=emissions)
 
-    df.to_csv("emission_model/model.csv", sep=";")
+    df.to_csv("emission_model/model_" + emissions + ".csv", sep=";")
 
+append_additional_emissions_to_lcpa(emissions="low")
+append_additional_emissions_to_lcpa(emissions="high")
 
 #df = pd.read_csv("emission_model/model.csv", sep=";", index_col=[0,1])
 #df.groupby(level=0).apply(max)["Speed [m/second]"].to_csv("emission_model/max_speed_per_type.csv")
@@ -305,9 +336,10 @@ def calculate_emissions(
 
     filepaths = [os.path.join(datapath, i) for i in os.listdir(datapath)]
 
-    # get gict with mapper for imo-number to model
+    # get scenario-specific dict with mapper for imo-number to model
     imo_by_type = os.path.join(
-        os.path.expanduser("~"), config["raw_data"], "imo_by_type.pkl"
+        os.path.expanduser("~"), config["raw_data"],
+        "imo_by_type_" +  config["scenario_name"] + ".pkl"
     )
     with open(imo_by_type, "rb") as f:
         ships_per_ship_class = pickle.load(f)
@@ -320,7 +352,6 @@ def calculate_emissions(
     zipped_ship_routes = zipfile.ZipFile(
             os.path.join(datapath, "ship_routes.zip"),
             mode='w', compression=zipfile.ZIP_DEFLATED)
-
 
 
     for filepath in filepaths:
