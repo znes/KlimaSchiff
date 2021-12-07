@@ -38,6 +38,7 @@ def category(row):
     if check:
         return check[0]
 
+
 df["category"] = df["Unnamed: 1"].apply(lambda x: category(x))
 
 df["Unnamed: 0"] = pd.to_datetime(df["Unnamed: 0"], format="%Y%m%d")
@@ -51,46 +52,51 @@ pollutants = set(
     ["SOx", "NOx", "PM", "CO [kg]", "CO2", "ASH", "POA", "NMVOC", "BC"]
 )
 
+
 def correct_categories(cols):
     return [cat for col in cols for cat in pollutants if cat in col]
+
+
 df_sums = df_sums.T
 df_sums["component"] = correct_categories(df_sums.index)
 df_time = df_sums.reset_index().groupby("component").sum().T
 
 
-#for shipclass in df_time.index.get_level_values(1).unique():
+# for shipclass in df_time.index.get_level_values(1).unique():
 for pollutant in df_time.columns:
     data = df_time.loc[:, pollutant]
     data = data.unstack()
-    positions = [p for p in data.index
-                 if p.hour == 0
-                 and p.is_month_start
-                 and p.month in range(1, 13, 1)]
-    labels = [l.strftime('%m-%d') for l in positions]
+    positions = [
+        p
+        for p in data.index
+        if p.hour == 0 and p.is_month_start and p.month in range(1, 13, 1)
+    ]
+    labels = [l.strftime("%m-%d") for l in positions]
     ax = data.plot(grid=True)
     ax.set_xticks(positions)
     ax.set_xticklabels(labels)
     ax.set_ylabel("Emissions per day in kg")
     ax.set_xlim(positions[0], positions[-1])
     ax.set_xlabel("Day")
-    lgd = ax.legend(title="Type", bbox_to_anchor=(1.02, 1), loc='upper left')
+    lgd = ax.legend(title="Type", bbox_to_anchor=(1.02, 1), loc="upper left")
     ax.set_title("{}-Emissions in SQ-scenario".format(pollutant))
     plt.savefig(
         "figures/results/Daily_{}_emissions_SQ.pdf".format(pollutant),
         bbox_extra_artists=(lgd,),
-        bbox_inches="tight",)
-
+        bbox_inches="tight",
+    )
 
 
 # aggregated numbers yearly --------------------------------------------
 df_time_agg = df_time.reset_index().groupby("category").sum()
 df_time_agg.to_csv("tables/yearly_emissions_by_shiptype_and_pollutant_SQ.csv")
 
-plot_data = df_time_agg.drop(["CO2", "NOx", "CO [kg]", "SOx"], axis=1).stack().reset_index()
-sns.barplot(x="component",
-            y=0,
-            hue="category",
-            data=plot_data)
+plot_data = (
+    df_time_agg.drop(["CO2", "NOx", "CO [kg]", "SOx"], axis=1)
+    .stack()
+    .reset_index()
+)
+sns.barplot(x="component", y=0, hue="category", data=plot_data)
 #
 
 ax = df_time_agg[["NOx", "CO [kg]", "SOx"]].divide(1e9).plot(kind="bar")

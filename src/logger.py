@@ -7,7 +7,7 @@ logging.basicConfig(
     ),
     level=logging.INFO,
     filemode="w",
-    format='%(asctime)s %(levelname)-8s %(message)s',
+    format="%(asctime)s %(levelname)-8s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
@@ -16,5 +16,5 @@ logging.info("Start logging...")
 logger.setLevel(logging.INFO)
 
 
-#logging.info("Start calculating ship routes.")
-#calculate_routes(dataset, config)
+# logging.info("Start calculating ship routes.")
+# calculate_routes(dataset, config)

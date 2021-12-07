@@ -1,6 +1,5 @@
 # import functools
 import os
-import json
 import logging
 import pickle
 import zipfile
@@ -9,197 +8,10 @@ import numpy as np
 import pandas as pd
 
 # import matplotlib.pyplot as plt
-from sklearn.linear_model import Ridge
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.pipeline import make_pipeline
-from scipy import interpolate
-
-
-def merge_lcpa_models(path="emission_model/lcpa-models"):
-    """ merges raw lcpa files
-    """
-    files = os.listdir(path)
-    lcpa = pd.DataFrame()
-    for file in files:
-        _df = pd.read_csv(
-            os.path.join(path, file), sep=";", skiprows=1, index_col=[0]
-        )
-        lcpa = pd.concat([lcpa, _df])
-    lcpa.to_csv("emission_model/lcpa_model.csv", sep=";")
-    return lcpa
-# merge_lcpa_models()
-
-
-def append_additional_emissions_to_lcpa(emissions="low"):
-    """
-    """
-    df = pd.read_csv(
-        "emission_model/lcpa_model.csv", sep=";", index_col=[0, 1]
-    )
-
-    max_speed = pd.read_csv("emission_model/max_speed_per_type.csv", index_col=0)
-
-    def _add_emissions(row, emissions):
-        """
-        """
-        energy_factor = row["Energy [J]"] / 3.6e6 / 1e3
-        fuel_factor = row["Fuel Consumption [kg]"]  / 1e3
-
-
-        # for future scenarios apply different emission factors
-        if "FS" in row.name[0] and emissions == "low":
-            bc=0
-            poa=0
-            co=0
-            ash=0
-            nmvoc=0
-
-            return (bc, ash, poa, co, nmvoc)
-
-        elif "FS" in row.name[0] and emissions == "high":
-            # for "high" future scenario 0 for black carbon and ash,
-            # rest like SQ
-
-            bc=0
-            ash=0
-
-            if row.name[1] == "Electrical":
-                poa = 0.15 * energy_factor
-                co = 0.54 * energy_factor
-                nmvoc = 0.4 * energy_factor
-            else:
-                poa = 0.2 * energy_factor
-                co = 0.54 * energy_factor
-
-                if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
-                    if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
-                        nmvoc = 0.6 * energy_factor # cruise mode
-                    else:
-                        nmvoc = 1.8 * energy_factor # hotelling
-                else:
-                    if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
-                        nmvoc = 0.5 * energy_factor
-                    else:
-                        nmvoc = 1.5 * energy_factor
-
-            return (bc, ash, poa, co, nmvoc)
-
-        else:
-            if row.name[1] == "Electrical":
-                bc = 0.15 * energy_factor  # in g/KWh -> kg
-                poa = 0.15 * energy_factor
-                co = 0.54 * energy_factor
-                ash = 0.02 * 0.001 * fuel_factor
-                nmvoc = 0.4 * energy_factor
-            else:
-                bc = 0.03 * energy_factor
-                poa = 0.2 * energy_factor
-                co = 0.54 * energy_factor
-                ash = 0.02 * 0.001 * fuel_factor
-
-                if any(i in row.name[0] for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]):
-                    if row["Speed [m/second]"] > (0.5 * max_speed.loc[row.name[0]].values[0]):
-                        nmvoc = 0.6 * energy_factor # cruise mode
-                    else:
-                        nmvoc = 1.8 * energy_factor # hotelling
-                else:
-                    if row["Speed [m/second]"] > (0.35 * max_speed.loc[row.name[0]].values[0]):
-                        nmvoc = 0.5 * energy_factor
-                    else:
-                        nmvoc = 1.5 * energy_factor
-
-            return (bc, ash, poa, co, nmvoc)
-
-    df[
-        [
-            "BC [kg]",
-            "ASH [kg]",
-            "POA [kg]",
-            "CO [kg]",
-            "NMVOC [kg]"
-        ]
-    ] = df.apply(
-        _add_emissions, axis=1, result_type="expand",
-        emissions=emissions)
-
-    df.to_csv("emission_model/model_" + emissions + ".csv", sep=";")
-
-append_additional_emissions_to_lcpa(emissions="low")
-append_additional_emissions_to_lcpa(emissions="high")
-
-#df = pd.read_csv("emission_model/model.csv", sep=";", index_col=[0,1])
-#df.groupby(level=0).apply(max)["Speed [m/second]"].to_csv("emission_model/max_speed_per_type.csv")
-
-def create_model(
-    model_data,
-    ship_class="Tanker_Handy_Max_Tier_II",
-    emission_type="CO2 (Well to tank) [kg]",
-    interpolate_values=True,
-    engine=None,
-):
-    """ Create a speed-emission model (fit) for a ship class and a specific
-    emission based on LCPA data
-
-    Parameters
-    -----------
-    model_data: pd.DataFrame
-        DF containing the LCPA results for the different ship classes
-    ships_class: str
-        Name of ship class, must be in index of `model_data`
-    emission_type: str
-        Emission, must be in column of `model_data`
-    engine: str
-        Which engine should be used one of "Electrical" and "Propulsion"
-
-    Returns
-    -------
-    fit
-    """
-
-    if interpolate_values is True:
-        model = interpolate(
-            model_data.loc[(ship_class, engine)]["Speed [m/second]"],
-            model_data.loc[(ship_class, engine)][emission_type],
-            fill_value="extrapolate",
-        )
-    else:
-        x = model_data.loc[(ship_class, engine)]["Speed [m/second]"]
-        y = model_data.loc[(ship_class, engine)][emission_type]
-        X = x[:, np.newaxis]
-        model = make_pipeline(PolynomialFeatures(degree=3), Ridge())
-        model.fit(X, y)
-
-    return model
-
-
-def create_models(model_data, emission_types=None):
-    """ Creates all models for all ship classes in model data and all
-    emission_types provided.
-
-    Parameters
-    -----------
-    model_data: pd.DataFrame
-        s. create model
-    emissions_types: list
-        list with names of emissions (string) which are `model_data` columns
-        If is None, columns for 2:end from `model_data` are used
-
-    Returns
-    -------
-    Dict with tuple keys (ship_class, emission_type) and values fit model for
-    all shipclasses and emission types (columns!)
-    """
-    if emission_types is None:
-        emission_types = model_data.columns[2:]
-    models = {
-        (ship_class, engine, emission_type): create_model(
-            model_data, ship_class, emission_type, engine
-        )
-        for emission_type in emission_types
-        for ship_class, engine in model_data.index.unique()
-    }
-
-    return models
+# from sklearn.linear_model import Ridge
+# from sklearn.preprocessing import PolynomialFeatures
+# from sklearn.pipeline import make_pipeline
+# from scipy import interpolate
 
 
 def interpolate_emissions(
@@ -211,14 +23,21 @@ def interpolate_emissions(
     model_data,
     resample,
 ):
-    """ Much simpler way of the fitting solution in "emissions_by_type_and_class()"
+    """ Simple way of the fitting solution in "emissions_by_type_and_class()"
     to get emissions
     """
     emissions = {}
     for ship_class in ship_classes:
 
         # TODO: Check if ship_class exists if not log warning!
-        ship_imo_numbers = ships_per_ship_class[ship_class]
+        ship_imo_numbers = ships_per_ship_class.get(ship_class, [])
+        if ship_imo_numbers == []:
+            logging.info(
+                "No ship type {} in imo-number dict. This may be correct.".format(
+                    ship_class
+                )
+            )
+
         x = routes.loc[routes["imo"].isin(ship_imo_numbers)]
 
         if not x.empty:
@@ -235,39 +54,7 @@ def interpolate_emissions(
                         ].values,
                     ) / (
                         60 / int(resample)
-                    )  # convert from hourly values to "resample" minutes
-            emissions[ship_class] = x
-        else:
-            emissions[ship_class] = None
-    return emissions
-
-
-def emissions_by_type_and_class(
-    routes,
-    emission_types,
-    ship_classes,
-    engine_types,
-    ships_per_ship_class,
-    models,
-    resample,
-):
-    """
-    """
-    emissions = {}
-    for ship_class in ship_classes:
-
-        # TODO: Check if ship_class exists if not log warning!
-        ship_imo_numbers = ships_per_ship_class[ship_class]
-        x = routes.loc[routes["imo"].isin(ship_imo_numbers)]
-
-        if not x.empty:
-            for emission_type in emission_types:
-                for engine in engine_types:
-                    x.loc[:, (engine, emission_type)] = models[
-                        (ship_class, engine, emission_type)
-                    ](
-                        x["speed_calc"]
-                    )  # .predict(x["speed_calc"][:, np.newaxis]) / ( 60 / int(resample) ) # convert from hourly values to "resample" minutes
+                    )  # convert from hourly model values to "resample" minutes
             emissions[ship_class] = x
         else:
             emissions[ship_class] = None
@@ -290,34 +77,7 @@ def read_routes(filepath):
     return routes
 
 
-def test_models():
-    """
-    """
-    model_data = pd.read_csv(
-        "emission_model/model.csv", sep=";", index_col=[0]
-    )
-
-    models = create_models(model_data)
-
-    predicted = {}
-    for i in models:
-        # if i[1] == "NOx [kg]":
-        predicted[i] = models[i].predict(
-            np.reshape(np.linspace(0, 15, 150), (150, 1))
-        )
-    df = pd.DataFrame(predicted).stack(level=0)
-    df.index = df.index.swaplevel()
-    df = df.sort_index()
-
-    df.to_csv("emission_model/predicted-new.csv")
-
-
-# test_models()
-
-
-def calculate_emissions(
-    config, columns=["Fuel Consumption [kg]", "NOx [kg]", "CO2 [kg]"]
-):
+def calculate_emissions(config, columns=["CO2 [kg]"]):
     """
     """
 
@@ -328,7 +88,10 @@ def calculate_emissions(
     )
 
     outputpath = os.path.join(
-        os.path.expanduser("~"), config["intermediate_data"], "ship_emissions"
+        os.path.expanduser("~"),
+        config["intermediate_data"],
+        config["scenario"],
+        "ship_emissions",
     )
 
     if not os.path.exists(outputpath):
@@ -338,21 +101,31 @@ def calculate_emissions(
 
     # get scenario-specific dict with mapper for imo-number to model
     imo_by_type = os.path.join(
-        os.path.expanduser("~"), config["raw_data"],
-        "imo_by_type_" +  config["scenario_name"] + ".pkl"
+        os.path.expanduser("~"),
+        config["model_data"],
+        "imo_by_type_" + config["scenario"] + ".pkl",
     )
     with open(imo_by_type, "rb") as f:
         ships_per_ship_class = pickle.load(f)
 
-    model_data = pd.read_csv(
-        "emission_model/model.csv", sep=";", index_col=[0, 1]
+    model_name = os.path.join(
+        os.path.expanduser("~"),
+        config["model_data"],
+        "model_" + config["scenario"] + ".csv",
     )
 
+    model_data = pd.read_csv(model_name, sep=";", index_col=[0, 1])
 
-    zipped_ship_routes = zipfile.ZipFile(
-            os.path.join(datapath, "ship_routes.zip"),
-            mode='w', compression=zipfile.ZIP_DEFLATED)
+    # zipped_ship_routes = zipfile.ZipFile(
+    #     os.path.join(outputpath, "ship_routes.zip"),
+    #     mode="w",
+    #     compression=zipfile.ZIP_DEFLATED,
+    # )
 
+    if columns == "all":
+        emission_types = model_data.columns[2:]
+    else:
+        emission_types = columns
 
     for filepath in filepaths:
         routes = read_routes(filepath)
@@ -362,38 +135,36 @@ def calculate_emissions(
             ship_classes=[
                 i
                 for i in model_data.index.get_level_values(0).unique()
-                if not " FS" in i
+                # if not " FS" in i
             ],
             engine_types=[
                 i for i in model_data.index.get_level_values(1).unique()
             ],  # ["Electrical", "Propulsion"]
-            emission_types=[
-                "SOx [kg]",
-                "PM [kg]",
-                "NOx [kg]",
-                "CO2 [kg]",
-                "BC [kg]",
-                "ASH [kg]",
-                "POA [kg]",
-                "CO [kg]",
-                "NMVOC [kg]"
-            ],
+            emission_types=emission_types,
             ships_per_ship_class=ships_per_ship_class,
             model_data=model_data,
             resample=config["resample"],
         )
         model_data.index.get_level_values(0).unique()
+
+        df_emissions = pd.concat(emissions.values()).sort_index()
+
         outputfile = os.path.join(
             outputpath,
             os.path.basename(filepath).replace(
                 "ship_routes", "ship_emissions"
-            ),
+            ).replace("csv", "zip"),
         )
-        pd.concat(emissions.values()).sort_index().to_csv(
-            outputfile, index=False
+        filename = os.path.basename(filepath).replace(
+            "ship_routes", "ship_emissions"
         )
 
-        # Write to zip file
-        zipped_ship_routes.write(filepath, arcname=os.path.basename(filepath))
-        os.remove(filepath)
-    zipped_ship_routes.close()
+        compression_options = dict(method='zip', archive_name=filename)
+        df_emissions.to_csv(outputfile, compression=compression_options)
+
+        # # Write to zip file
+        # zipped_ship_routes.write(
+        #     outputfile, arcname=os.path.basename(outputfile)
+        # )
+        # os.remove(outputfile)
+    #zipped_ship_routes.close()

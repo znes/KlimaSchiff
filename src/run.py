@@ -1,53 +1,93 @@
 import click
 import json
+import os
 
-from calculate_routes import calculate_routes
-from calculate_emissions import calculate_emissions, append_additional_emissions_to_lcpa
-from rasterize_points import rasterize_points
-import preprocess as preprocess
 from multiprocessing import Pool
 from itertools import repeat
 
+from calculate_routes import calculate_routes
+from calculate_emissions import calculate_emissions
+from rasterize_points import rasterize_points
+import preprocess as preprocess
+
+
 @click.group()
-@click.option('-p', '--preprocess', type=bool, default=False, help='If raw data needs to be preprocessed first')
-@click.option('--parallel', '-l', type=int, help="Number of processes (int) when using multiprocessing parallel computing")
+@click.option(
+    "-p",
+    "--preprocess",
+    type=bool,
+    default=False,
+    help="If raw data needs to be preprocessed first",
+)
+@click.option(
+    "--parallel",
+    "-l",
+    type=int,
+    help="Number of processes (int) when using multiprocessing parallel computing",
+)
 @click.pass_context
 def cli(ctx, preprocess, parallel):
     ctx.ensure_object(dict)
-    ctx.obj['PREPROCESS'] = preprocess
-    ctx.obj['PARALLEL'] = parallel
+    ctx.obj["PREPROCESS"] = preprocess
+    ctx.obj["PARALLEL"] = parallel
+
 
 @cli.command()
-def reduce():
+def reduce_ais():
     with open("config.json") as file:
         config = json.load(file)
 
     datasets = ["vesselfinder", "helcom"]
     for d in datasets:
-        preprocess.reduce(d, config)
+        preprocess.reduce_ais_data(d, config)
+
 
 @cli.command()
-def merge():
+def merge_ais():
     with open("config.json") as file:
         config = json.load(file)
 
-    preprocess.merge(config)
+    preprocess.merge_ais_data(config)
+
+
+# helper to be used in different commands...
+def _build_emission_model(config):
+    preprocess.merge_lcpa_models()
+
+    preprocess.append_additional_emissions_to_lcpa(
+        scenario=config["scenario"],
+        output_dir=os.path.join(os.path.expanduser("~"), config["model_data"]),
+    )
+
+    preprocess.build_imo_lists(config)
+
 
 @cli.command()
-def routes():
+def build_emission_model():
+    with open("config.json") as file:
+        config = json.load(file)
+
+    _build_emission_model(config)
+
+
+@cli.command()
+def calc_routes():
     with open("config.json") as file:
         config = json.load(file)
     calculate_routes(config)
 
+
 @cli.command()
-def emissions():
+@click.pass_context
+def calc_emissions(ctx):
     with open("config.json") as file:
         config = json.load(file)
 
     # create up-to-date model file
-    append_additional_emissions_to_lcpa()
+    _build_emission_model(config)
 
-    calculate_emissions(config)
+    calculate_emissions(config, columns="all")
+
 
 @cli.command()
 @click.pass_context
@@ -59,32 +99,37 @@ def rasterize(ctx):
         pool = Pool(processes=ctx.obj["PARALLEL"])
         pool.starmap(
             rasterize_points,
-            zip(repeat(config), [
-                {"SOx [kg]": "SO2"},
-                {"PM [kg]": "PM"},
-                {"NOx [kg]": "NOx"},
-                {"CO2 [kg]": "CO2"},
-                {"BC [kg]": "EC"},
-                {"ASH [kg]": "Ash"},
-                {"POA [kg]": "POA"},
-                {"CO [kg]": "CO"},
-                {"NMVOC [kg]": "NMVOC"}]))
+            zip(
+                repeat(config),
+                [
+                    {"SOx [kg]": "SO2"},
+                    {"PM [kg]": "PM"},
+                    {"NOx [kg]": "NOx"},
+                    {"CO2 [kg]": "CO2"},
+                    {"BC [kg]": "EC"},
+                    {"ASH [kg]": "Ash"},
+                    {"POA [kg]": "POA"},
+                    {"CO [kg]": "CO"},
+                    {"NMVOC [kg]": "NMVOC"},
+                ],
+            ),
+        )
 
     else:
         rasterize_points(
             config=config,
             emission_types={
-            "SOx [kg]": "SO2",
-            "PM [kg]": "PM",
-            "NOx [kg]": "NOx",
-            "CO2 [kg]": "CO2",
-            "BC [kg]": "EC",
-            "ASH [kg]": "Ash",
-            "POA [kg]": "POA",
-            "CO [kg]": "CO",
-            "NMVOC [kg]": "NMVOC",
-        })
-
+                "SOx [kg]": "SO2",
+                "PM [kg]": "PM",
+                "NOx [kg]": "NOx",
+                "CO2 [kg]": "CO2",
+                "BC [kg]": "EC",
+                "ASH [kg]": "Ash",
+                "POA [kg]": "POA",
+                "CO [kg]": "CO",
+                "NMVOC [kg]": "NMVOC",
+            },
+        )
 
 
 @cli.command()
@@ -95,18 +140,19 @@ def all(ctx):
     with open("config.json") as file:
         config = json.load(file)
 
-    if ctx.obj['PREPROCESS']:
+    if ctx.obj["PREPROCESS"]:
         datasets = ["vesselfinder", "helcom"]
         for d in datasets:
-            reduce(d, config)
+            reduce_ais(d, config)
 
-        merge(config)
+        merge_ais(config)
 
     calculate_routes(config)
 
     calculate_emissions(config)
 
     rasterize_points(config=config)
+
 
 if __name__ == "__main__":
     from logger import logger

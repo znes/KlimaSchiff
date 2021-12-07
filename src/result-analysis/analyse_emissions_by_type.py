@@ -27,14 +27,17 @@ for file in files:
         emission_by_shiptype[(int(re.findall("\d+", file)[0]), k)] = (
             df.loc[df["imo"].isin(v), df.columns[7:25]].sum().values
         )
-emissions_by_type_and_day = pd.DataFrame(emission_by_shiptype, index=df.columns[7:25]).T
+emissions_by_type_and_day = pd.DataFrame(
+    emission_by_shiptype, index=df.columns[7:25]
+).T
 
 emissions_by_type_and_day.to_csv(
     os.path.join(
         os.path.expanduser("~"),
         config["result_data"],
-    "total_emissions_by_type_and_day.csv")
+        "total_emissions_by_type_and_day.csv",
     )
+)
 
 # df = pd.read_csv("total_emissions_by_type_and_day.csv", index_col=[0,1], parse_dates=True)
 # df.groupby(level=1).sum()
