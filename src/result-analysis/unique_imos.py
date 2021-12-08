@@ -24,7 +24,9 @@ def get_unqiue_ais_data_imos():
     imos = []
     for file in files:
         # print(file)
-        imos.extend(pd.read_csv(os.path.join(dirpath, file), usecols=["imo"], dtype="int").imo.unique())
+        imos.extend(
+            pd.read_csv(os.path.join(dirpath, file),
+            usecols=["imo"], dtype="int").imo.unique())
 
     outpath = os.path.join(
         os.path.expanduser("~"),
@@ -41,40 +43,47 @@ def get_unqiue_ais_data_imos():
             "unique_imos.csv"))
     return unique_imos
 
-unique_imos = get_unqiue_ais_data_imos()
+if __name__ == "__main__":
+    import os
+    import json
+    import pickle
+    import pandas as pd
 
-# for some data-analysis later -> move to other file (e.g. result analysis)
-with open("config.json") as file:
-    config = json.load(file)
+    from itertools import chain
+    unique_imos = get_unqiue_ais_data_imos()
 
-imo_by_type_path = os.path.join(
-    os.path.expanduser("~"),
-    config["model_data"],
-    "imo_by_type_2030.pkl",
-)
-with open(imo_by_type_path, "rb") as f:
-    imo_by_type = pickle.load(f)
+    # for some data-analysis later -> move to other file (e.g. result analysis)
+    with open("config.json") as file:
+        config = json.load(file)
 
-imos_in_mbd = list(chain.from_iterable([i for i in imo_by_type.values()]))
+    imo_by_type_path = os.path.join(
+        os.path.expanduser("~"),
+        config["model_data"],
+        "imo_by_type_2030.pkl",
+    )
+    with open(imo_by_type_path, "rb") as f:
+        imo_by_type = pickle.load(f)
 
-# check which imo from ship data base is in AIS (unique) imos
-model_imos = [i for i in imos_in_mbd if i in unique_imos]
+    imos_in_mbd = list(chain.from_iterable([i for i in imo_by_type.values()]))
 
-# len(unique_imos)
-# len(imos_in_mbd)
-# len(model_imos)
+    # check which imo from ship data base is in AIS (unique) imos
+    model_imos = [i for i in imos_in_mbd if i in unique_imos]
 
-sq = {}
-fs = {}
-for k,v in imo_by_type.items():
+    # len(unique_imos)
+    # len(imos_in_mbd)
+    # len(model_imos)
 
-    if " FS" in k:
-        # get the lenght of imos, if imo of MDB dataset is in AIS unique imo set
-        fs[k.replace(" FS", " Tier I")] = len([i for i in v if i in unique_imos])
-    else:
-        sq[k] = len([i for i in v if i in unique_imos])
+    sq = {}
+    fs = {}
+    for k,v in imo_by_type.items():
 
-df_2030 = pd.concat([pd.Series(fs, name="FS"), pd.Series(sq, name="SQ")], axis=1).fillna(0).astype("int")
-df_2030.to_csv("tables/old_new_ship_ratio_2030.csv")
-df_2030.to_latex("tables/old_new_ship_ratio_2030.tex")
-#df_2030.sum().sum()
+        if " FS" in k:
+            # get the lenght of imos, if imo of MDB dataset is in AIS unique imo set
+            fs[k.replace(" FS", " Tier I")] = len([i for i in v if i in unique_imos])
+        else:
+            sq[k] = len([i for i in v if i in unique_imos])
+
+    df_2030 = pd.concat([pd.Series(fs, name="FS"), pd.Series(sq, name="SQ")], axis=1).fillna(0).astype("int")
+    df_2030.to_csv("tables/old_new_ship_ratio_2030.csv")
+    df_2030.to_latex("tables/old_new_ship_ratio_2030.tex")
+    #df_2030.sum().sum()
