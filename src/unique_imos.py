@@ -8,7 +8,9 @@ import pandas as pd
 
 from itertools import chain
 
-def get_unqiue_ais_data_imos():
+def calc_unique_imos():
+    """
+    """
     with open("config.json") as file:
         config = json.load(file)
 
@@ -33,25 +35,16 @@ def get_unqiue_ais_data_imos():
         config["model_data"])
 
     if not os.path.exists(outpath):
-        os.path.makedirs(outpath)
+        os.makedirs(outpath)
 
     unique_imos = set(imos)
+
     pd.Series(list(unique_imos)).to_csv(
         os.path.join(
             os.path.expanduser("~"),
             config["model_data"],
             "unique_imos.csv"))
-        
-    return unique_imos
 
-def calc_unique_imos():
-    """
-    """
-    unique_imos = get_unqiue_ais_data_imos()
-
-    # for some data-analysis later -> move to other file (e.g. result analysis)
-    with open("config.json") as file:
-        config = json.load(file)
 
     imo_by_type_path = os.path.join(
         os.path.expanduser("~"),
