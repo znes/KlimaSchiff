@@ -150,8 +150,6 @@ def append_additional_emissions_to_lcpa(
     df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1])
 
     # get the maximum speed per shiptype
-
-    df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0,1])
     max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
     #.to_csv("emission_model/max_speed_per_type.csv")
 
@@ -207,7 +205,7 @@ def append_additional_emissions_to_lcpa(
 
             return (bc, ash, poa, co, nmvoc)
 
-        elif "sq" in scenario:
+        else:
             if row.name[1] == "Electrical":
                 bc = 0.15 * energy_factor  # in g/KWh -> kg
                 poa = 0.15 * energy_factor
@@ -239,8 +237,6 @@ def append_additional_emissions_to_lcpa(
                         nmvoc = 1.5 * energy_factor
 
             return (bc, ash, poa, co, nmvoc)
-        else:
-            pass
 
     df[
         ["BC [kg]", "ASH [kg]", "POA [kg]", "CO [kg]", "NMVOC [kg]"]
