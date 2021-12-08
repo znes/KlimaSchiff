@@ -8,6 +8,8 @@ from itertools import repeat
 from calculate_routes import calculate_routes
 from calculate_emissions import calculate_emissions
 from rasterize_points import rasterize_points
+from unique_imos import calc_unique_imos
+
 import preprocess as preprocess
 
 
@@ -49,6 +51,9 @@ def merge_ais():
 
     preprocess.merge_ais_data(config)
 
+@cli.command()
+def unique_imos():
+    calc_unique_imos()
 
 # helper to be used in different commands...
 def _build_emission_model(config):

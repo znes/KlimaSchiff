@@ -41,15 +41,12 @@ def get_unqiue_ais_data_imos():
             os.path.expanduser("~"),
             config["model_data"],
             "unique_imos.csv"))
+        
     return unique_imos
 
-if __name__ == "__main__":
-    import os
-    import json
-    import pickle
-    import pandas as pd
-
-    from itertools import chain
+def calc_unique_imos():
+    """
+    """
     unique_imos = get_unqiue_ais_data_imos()
 
     # for some data-analysis later -> move to other file (e.g. result analysis)
@@ -64,10 +61,10 @@ if __name__ == "__main__":
     with open(imo_by_type_path, "rb") as f:
         imo_by_type = pickle.load(f)
 
-    imos_in_mbd = list(chain.from_iterable([i for i in imo_by_type.values()]))
+    #imos_in_mbd = list(chain.from_iterable([i for i in imo_by_type.values()]))
 
     # check which imo from ship data base is in AIS (unique) imos
-    model_imos = [i for i in imos_in_mbd if i in unique_imos]
+    # model_imos = [i for i in imos_in_mbd if i in unique_imos]
 
     # len(unique_imos)
     # len(imos_in_mbd)
@@ -76,7 +73,6 @@ if __name__ == "__main__":
     sq = {}
     fs = {}
     for k,v in imo_by_type.items():
-
         if " FS" in k:
             # get the lenght of imos, if imo of MDB dataset is in AIS unique imo set
             fs[k.replace(" FS", " Tier I")] = len([i for i in v if i in unique_imos])
