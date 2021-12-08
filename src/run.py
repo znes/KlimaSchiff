@@ -58,7 +58,7 @@ def _build_emission_model(config):
         config["model_data"])
 
     if not os.path.exists(model_data_path):
-        os.path.makedirs(model_data_path)
+        os.makedirs(model_data_path)
 
     preprocess.merge_lcpa_models(
         config=config)
