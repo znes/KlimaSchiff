@@ -1,7 +1,7 @@
 import os
 import logging
 import pickle
-
+import json
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -104,10 +104,16 @@ def merge_ais_data(config):
 
 def merge_lcpa_models(
     input_path=os.path.join("emission_model", "lcpa-models"),
-    output_path=os.path.join("emission_model", "lcpa_model.csv"),
+    lcpa_model_name="lcpa_model.csv",
+    config=None
 ):
     """ Merges raw lcpa files
     """
+    output_path = os.path.join(
+        os.path.expanduser("~"),
+        config["model_data"],
+        lcpa_model_name)
+
     logger.info(
         "Merging lcpa models from {0} to one file {1}".format(
             input_path, output_path
@@ -129,22 +135,26 @@ def merge_lcpa_models(
 
 def append_additional_emissions_to_lcpa(
     scenario="2015_sq",
-    lcpa_model_path=os.path.join("emission_model", "lcpa_model.csv"),
-    max_speed_path=os.path.join("emission_model", "max_speed_per_type.csv"),
+    lcpa_model_name="lcpa_model.csv",
     output_dir=None,
+    config=None
 ):
     """
     """
+    lcpa_model_path = os.path.join(
+        os.path.expanduser("~"),
+        config["model_data"],
+        lcpa_model_name)
 
     # read the lcpa model to extend be additional pollutants
     df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1])
 
     # get the maximum speed per shiptype
-    # created by code:
-    # df = pd.read_csv("emission_model/model.csv", sep=";", index_col=[0,1])
-    # df.groupby(level=0).apply(max)["Speed [m/second]"].to_csv("emission_model/max_speed_per_type.csv")
 
-    max_speed = pd.read_csv(max_speed_path, index_col=0)
+    df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0,1])
+    max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
+    #.to_csv("emission_model/max_speed_per_type.csv")
+
 
     def _add_emissions(row, scenario):
         """
@@ -182,14 +192,14 @@ def append_additional_emissions_to_lcpa(
                     for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]
                 ):
                     if row["Speed [m/second]"] > (
-                        0.5 * max_speed.loc[row.name[0]].values[0]
+                        0.5 * max_speed.loc[row.name[0]]
                     ):
                         nmvoc = 0.6 * energy_factor  # cruise mode
                     else:
                         nmvoc = 1.8 * energy_factor  # hotelling
                 else:
                     if row["Speed [m/second]"] > (
-                        0.35 * max_speed.loc[row.name[0]].values[0]
+                        0.35 * max_speed.loc[row.name[0]]
                     ):
                         nmvoc = 0.5 * energy_factor
                     else:
@@ -215,14 +225,14 @@ def append_additional_emissions_to_lcpa(
                     for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]
                 ):
                     if row["Speed [m/second]"] > (
-                        0.5 * max_speed.loc[row.name[0]].values[0]
+                        0.5 * max_speed.loc[row.name[0]]
                     ):
                         nmvoc = 0.6 * energy_factor  # cruise mode
                     else:
                         nmvoc = 1.8 * energy_factor  # hotelling
                 else:
                     if row["Speed [m/second]"] > (
-                        0.35 * max_speed.loc[row.name[0]].values[0]
+                        0.35 * max_speed.loc[row.name[0]]
                     ):
                         nmvoc = 0.5 * energy_factor
                     else:
@@ -285,6 +295,7 @@ def create_ship_dataframe():
         add_type, axis=1, result_type="expand",
     )
     ships = ships.drop(ships.loc[ships["Class"] == "rausnehmen"].index, axis=0)
+    ships = ships.drop(ships.loc[ships["BUILT"] > 2015].index, axis=0)
 
     return ships
 
@@ -334,11 +345,18 @@ def build_imo_lists(config):
     # create scenarios
     ships_2030 = ships.copy()
     ships_2040 = ships.copy()
-    ships_2050 = ships.copy()
 
     def append_future_suffix(row, year):
-        if row["BUILT"] < year:
-            return row["DETAILTYPE"] + " FS"
+        # "<=" means, the ships from 2015 will have been replaced in 2040
+        # so 2040 has no old ships (as we do not analyse all ships
+        # build after 2015
+        if row["BUILT"] <= year:
+            # this sucks: naming for ship classes is not very good, so
+            # we spilt at Tier and strip some whitspace and add " FS"
+            # which should basicalley replace all Tier ship types names with
+            # their correct corresponding future scenario name
+            # e.g. "Bulker Handy Max Tier I" -> "Bulker Handy Max FS"
+            return row["DETAILTYPE"].split("Tier")[0].rstrip() + " FS"
         else:
             return row["DETAILTYPE"]
 
@@ -347,9 +365,6 @@ def build_imo_lists(config):
     )
     ships_2040["DETAILTYPE"] = ships_2040.apply(
         append_future_suffix, axis=1, year=2015
-    )
-    ships_2050["DETAILTYPE"] = ships_2050.apply(
-        append_future_suffix, axis=1, year=2025
     )
 
     # convert to lists for correct type
@@ -365,33 +380,31 @@ def build_imo_lists(config):
     ):
         imo_by_type_2040[k] = v.tolist()
 
-    imo_by_type_2050 = {}
-    for k, v in (
-        ships_2050.set_index("IMO").groupby("DETAILTYPE").groups.items()
-    ):
-        imo_by_type_2050[k] = v.tolist()
 
-    # flat_ls = []
-    # for i in imo_by_type_2030.values():
-    #     for j in i:
-    #         flat_ls.append(j)
+    # modelpath = os.path.join(
+    #     os.path.expanduser("~"),
+    #     config["model_data"],
+    #     "model_2030_low.csv"
+    # )
+    # model =pd.read_csv(modelpath, sep=";")
+    # modelclasses = model["Type"].unique()
+    #
+    # for i in imo_by_type_2040:
+    #     if i not in modelclasses:
+    #         print(i)
+    # all(ele in modelclasses for ele in imo_by_type.keys())
 
-    # for manual testing:
-    # ships[ships["IMO"] == imo_by_type["Car_Carrier_groesser_40000_GT__Tier_II"][4]]
     if config is None:
         with open("config.json") as file:
             config = json.load(file)
 
     imo_path = os.path.join(os.path.expanduser("~"), config["model_data"])
-    with open(os.path.join(imo_path, "imo_by_type_2015_sq.pkl"), "wb") as f:
+    with open(os.path.join(imo_path, "imo_by_type_2015.pkl"), "wb") as f:
         pickle.dump(imo_by_type, f)
-    with open(os.path.join(imo_path, "imo_by_type_2030_fs.pkl"), "wb") as f:
+    with open(os.path.join(imo_path, "imo_by_type_2030.pkl"), "wb") as f:
         pickle.dump(imo_by_type_2030, f)
-    with open(os.path.join(imo_path, "imo_by_type_2040_fs.pkl"), "wb") as f:
+    with open(os.path.join(imo_path, "imo_by_type_2040.pkl"), "wb") as f:
         pickle.dump(imo_by_type_2040, f)
-    with open(os.path.join(imo_path, "imo_by_type_2050_fs.pkl"), "wb") as f:
-        pickle.dump(imo_by_type_2050, f)
-
 
 if __name__ == "__main__":
 

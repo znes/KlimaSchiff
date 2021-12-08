@@ -7,12 +7,6 @@ import zipfile
 import numpy as np
 import pandas as pd
 
-# import matplotlib.pyplot as plt
-# from sklearn.linear_model import Ridge
-# from sklearn.preprocessing import PolynomialFeatures
-# from sklearn.pipeline import make_pipeline
-# from scipy import interpolate
-
 
 def interpolate_emissions(
     routes,
@@ -103,7 +97,7 @@ def calculate_emissions(config, columns=["CO2 [kg]"]):
     imo_by_type = os.path.join(
         os.path.expanduser("~"),
         config["model_data"],
-        "imo_by_type_" + config["scenario"] + ".pkl",
+        "imo_by_type_" + ''.join(i for i in config["scenario"] if i.isdigit()) + ".pkl",
     )
     with open(imo_by_type, "rb") as f:
         ships_per_ship_class = pickle.load(f)
@@ -147,8 +141,10 @@ def calculate_emissions(config, columns=["CO2 [kg]"]):
         )
         model_data.index.get_level_values(0).unique()
 
+
         df_emissions = pd.concat(emissions.values()).sort_index()
 
+        # import pdb;pdb.set_trace()
         outputfile = os.path.join(
             outputpath,
             os.path.basename(filepath).replace(

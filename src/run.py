@@ -52,11 +52,13 @@ def merge_ais():
 
 # helper to be used in different commands...
 def _build_emission_model(config):
-    preprocess.merge_lcpa_models()
+    preprocess.merge_lcpa_models(
+        config=config)
 
     preprocess.append_additional_emissions_to_lcpa(
         scenario=config["scenario"],
         output_dir=os.path.join(os.path.expanduser("~"), config["model_data"]),
+        config=config
     )
 
     preprocess.build_imo_lists(config)
