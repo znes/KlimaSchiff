@@ -25,9 +25,10 @@ def calc_unique_imos():
 
     imos = []
     for file in files:
-        # print(file)
-        _df = pd.read_csv(os.path.join(dirpath, file), usecols=["imo"], dtype="int")
-        imos.append(_df.imo.unique())
+        if file.endswith(".csv"):
+            # print(file)
+            _df = pd.read_csv(os.path.join(dirpath, file), usecols=["imo"], dtype="int")
+            imos.append(_df.imo.unique())
 
     imos = list(chain.from_iterable(imos))
 
