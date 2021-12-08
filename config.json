@@ -32,7 +32,7 @@
   "resample": 5,
   "pollutant_unit": "kg h-1",
   "start_date": "2014-01-12",
-  "scenario": "2015_sq",
+  "scenario": "2030_low",
   "bounding_box_lcc": [-516000.000, -366000.000, 312000.000, 462000.000],
   "bounding_box_lonlat": [-4, 50, 25, 65],
   "resolution_lcc": [4000, 4000],

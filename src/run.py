@@ -52,6 +52,14 @@ def merge_ais():
 
 # helper to be used in different commands...
 def _build_emission_model(config):
+
+    model_data_path = os.path.join(
+        os.path.expanduser("~"),
+        config["model_data"])
+
+    if not os.path.exists(model_data_path):
+        os.path.makedirs(model_data_path)
+
     preprocess.merge_lcpa_models(
         config=config)
 
