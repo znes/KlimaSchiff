@@ -147,18 +147,21 @@ def append_additional_emissions_to_lcpa(
         lcpa_model_name)
 
     # read the lcpa model to extend be additional pollutants
-    df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1])
+    df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1, 2])
 
     # get the maximum speed per shiptype
     max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
     #.to_csv("emission_model/max_speed_per_type.csv")
 
 
-    def _add_emissions(row, scenario):
+    def _add_emissions(row, scenario, dataframe):
         """
         """
         energy_factor = row["Energy [J]"] / 3.6e6 / 1e3
         fuel_factor = row["Fuel Consumption [kg]"] / 1e3
+        # assign PM value from LCPA tool, will only be replace for
+        # "high" scenarios
+        pm = row["PM [kg]"]
 
         # for future scenarios apply different emission factors
         if "FS" in row.name[0] and "low" in scenario:
@@ -168,14 +171,18 @@ def append_additional_emissions_to_lcpa(
             ash = 0
             nmvoc = 0
 
-            return (bc, ash, poa, co, nmvoc)
+            return (bc, ash, poa, co, nmvoc, pm)
 
         elif "FS" in row.name[0] and "high" in scenario:
-            # for "high" future scenario 0 for black carbon and ash,
+            # for "high" future scenario 0 for black carbon ash,
             # rest like SQ
-
             bc = 0
             ash = 0
+            # except pm which is -95% of, replace with 0.05 * Tier II values   
+            pm = dataframe.loc[
+                row.name[0].replace("FS", "Tier II"),
+                row.name[1],
+                row.name[2]]["PM [kg]"] * 0.05
 
             if row.name[1] == "Electrical":
                 poa = 0.15 * energy_factor
@@ -203,7 +210,7 @@ def append_additional_emissions_to_lcpa(
                     else:
                         nmvoc = 1.5 * energy_factor
 
-            return (bc, ash, poa, co, nmvoc)
+            return (bc, ash, poa, co, nmvoc, pm)
 
         else:
             if row.name[1] == "Electrical":
@@ -236,12 +243,12 @@ def append_additional_emissions_to_lcpa(
                     else:
                         nmvoc = 1.5 * energy_factor
 
-            return (bc, ash, poa, co, nmvoc)
+            return (bc, ash, poa, co, nmvoc, pm)
 
     df[
-        ["BC [kg]", "ASH [kg]", "POA [kg]", "CO [kg]", "NMVOC [kg]"]
+        ["BC [kg]", "ASH [kg]", "POA [kg]", "CO [kg]", "NMVOC [kg]", "PM [kg]"]
     ] = df.apply(
-        _add_emissions, axis=1, result_type="expand", scenario=scenario
+        _add_emissions, axis=1, result_type="expand", scenario=scenario, dataframe=df
     )
 
     if not os.path.exists(output_dir):

@@ -21,7 +21,7 @@ Ro-Pax bis 25000 GT Tier I,GT,0,24999,-inf,2010,2,500
 Ro-Pax bis 25000 GT Tier II,GT,0,24999,2011,2020,2,500
 Ro-Pax bis 25000 GT FS,GT,0,24999,2021,2050,2,500
 Ro-Pax groesser 25000 GT Tier I,GT,25000,+inf,-inf,2010,2,500
-Ro-Pax groesser 25000 GT  Tier II,GT,25000,+inf,2011,2020,2,500
+Ro-Pax groesser 25000 GT Tier II,GT,25000,+inf,2011,2020,2,500
 Ro-Pax groesser 25000 GT FS,GT,25000,+inf,2021,2050,2,500
 MPV bis 12000 t dwt Tier I,DWT,0,11999,-inf,2010,7,160
 MPV bis 12000 t dwt Tier II,DWT,0,11999,2011,2020,7,160
@@ -33,13 +33,13 @@ Diverse bis 2000 GT Tier I,GT,0,1999,-inf,2010,8,750
 Diverse bis 2000 GT Tier II,GT,0,1999,2011,2020,8,750
 Diverse bis 2000 GT FS,GT,0,1999,2021,2050,8,750
 Diverse groesser 2000 GT Tier I,GT,2000,+inf,-inf,2010,8,750
-Diverse groesser 2000 GT  Tier II,GT,2000,+inf,2011,2020,8,750
+Diverse groesser 2000 GT Tier II,GT,2000,+inf,2011,2020,8,750
 Diverse groesser 2000 GT FS,GT,2000,+inf,2021,2050,8,750
 Cruise bis 25000 GT Tier I,GT,0,24999,-inf,2010,3,500
 Cruise bis 25000 GT Tier II,GT,0,24999,2011,2020,3,500
 Cruise bis 25000 GT FS,GT,0,24999,2021,2050,3,500
 Cruise groesser 25000 GT Tier I,GT,25000,+inf,-inf,2010,3,500
-Cruise groesser 25000 GT  Tier II,GT,25000,+inf,2011,2020,3,500
+Cruise groesser 25000 GT Tier II,GT,25000,+inf,2011,2020,3,500
 Cruise groesser 25000 GT FS,GT,25000,+inf,2021,2050,3,500
 Container bis 17500 GT Tier I,GT,0,17499,-inf,2010,5,120
 Container bis 17500 GT Tier II,GT,0,17499,2011,2020,5,120
