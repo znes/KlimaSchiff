@@ -220,7 +220,7 @@ def append_additional_emissions_to_lcpa(
 
                 if any(
                     i in row.name[0]
-                    for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV", "Car"]
+                    for i in ["Bulker", "Tanker", "Container", "MPV", "Car"]
                 ):
                     if row["Speed [m/second]"] > (
                         0.5 * max_speed.loc[row.name[0]]
