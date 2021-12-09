@@ -178,7 +178,7 @@ def append_additional_emissions_to_lcpa(
             # rest like SQ
             bc = 0
             ash = 0
-            # except pm which is -95% of, replace with 0.05 * Tier II values   
+            # except pm which is -95% of, replace with 0.05 * Tier II values
             pm = dataframe.loc[
                 row.name[0].replace("FS", "Tier II"),
                 row.name[1],
@@ -194,7 +194,7 @@ def append_additional_emissions_to_lcpa(
 
                 if any(
                     i in row.name[0]
-                    for i in ["Bulker", "Tanker", "Container", "Cargo", "MPV"]
+                    for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
                     if row["Speed [m/second]"] > (
                         0.5 * max_speed.loc[row.name[0]]

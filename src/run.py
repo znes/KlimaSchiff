@@ -56,7 +56,7 @@ def unique_imos():
     calc_unique_imos()
 
 # helper to be used in different commands...
-def _build_emission_model(config):
+def _build_emission_models(config):
 
     model_data_path = os.path.join(
         os.path.expanduser("~"),
@@ -68,21 +68,26 @@ def _build_emission_model(config):
     preprocess.merge_lcpa_models(
         config=config)
 
-    preprocess.append_additional_emissions_to_lcpa(
-        scenario=config["scenario"],
-        output_dir=os.path.join(os.path.expanduser("~"), config["model_data"]),
-        config=config
-    )
+    scenario_names = ["2015_sq", "2030_low", "2030_high", "2040_low", "2040_high"]
+    if config["scenario"] not in scenario_names:
+        raise ValueError("Scenario: {} does not exist.".format(config["scenario"]))
+        
+    for name in scenario_names:
+        preprocess.append_additional_emissions_to_lcpa(
+            scenario=name,
+            output_dir=os.path.join(os.path.expanduser("~"), config["model_data"]),
+            config=config
+        )
 
     preprocess.build_imo_lists(config)
 
 
 @cli.command()
-def build_emission_model():
+def build_emission_models():
     with open("config.json") as file:
         config = json.load(file)
 
-    _build_emission_model(config)
+    _build_emission_models(config)
 
 
 @cli.command()
@@ -99,7 +104,7 @@ def calc_emissions(ctx):
         config = json.load(file)
 
     # create up-to-date model file
-    _build_emission_model(config)
+    _build_emission_models(config)
 
     calculate_emissions(config, columns="all")
 
