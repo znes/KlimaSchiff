@@ -154,8 +154,8 @@ def append_additional_emissions_to_lcpa(
     def _add_emissions(row, scenario, dataframe):
         """
         """
-        energy_factor = row["Energy [J]"] / 3.6e6 / 1e3
-        fuel_factor = row["Fuel Consumption [kg]"] / 1e3
+        energy_factor = row["Energy [J]"] / (3600 * 1e3) # J -> kWh
+        SFOC = (row["Fuel Consumption [kg]"] * 1e3)  / energy_factor  # g/kWh
         # assign PM value from LCPA tool, will only be replace for
         # "high" scenarios
         pm = row["PM [kg]"]
@@ -218,13 +218,13 @@ def append_additional_emissions_to_lcpa(
                 bc = 0.15 * energy_factor  # in g/KWh -> kg
                 poa = 0.15 * energy_factor
                 co = 0.54 * energy_factor
-                ash = 0.02 * 0.001 * fuel_factor
+                ash = 0.02 * 0.001 * SFOC
                 nmvoc = 0.4 * energy_factor
             else:
                 bc = 0.03 * energy_factor
                 poa = 0.2 * energy_factor
                 co = 0.54 * energy_factor
-                ash = 0.02 * 0.001 * fuel_factor
+                ash = 0.02 * 0.001 * SFOC
 
                 if any(
                     i in row.name[0]
