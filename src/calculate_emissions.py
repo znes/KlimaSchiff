@@ -3,6 +3,7 @@ import os
 import logging
 import pickle
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,19 +26,18 @@ def interpolate_emissions(
 
         # TODO: Check if ship_class exists if not log warning!
         ship_imo_numbers = ships_per_ship_class.get(ship_class, [])
-        if ship_imo_numbers == []:
-            logging.info(
-                "No ship type {} in imo-number dict. This may be correct.".format(
-                    ship_class
-                )
-            )
+        # if ship_imo_numbers == []:
+        #     logging.info(
+        #         "No ship type {} in imo-number dict. This may be correct.".format(
+        #             ship_class
+        #         )
+        #     )
 
         x = routes.loc[routes["imo"].isin(ship_imo_numbers)]
 
         if not x.empty:
             for emission_type in emission_types:
                 for engine in engine_types:
-                    # import pdb;pdb.set_trace()
                     x.loc[:, (engine + "-" + emission_type)] = np.interp(
                         x["speed_calc"],
                         model_data.loc[(ship_class, engine)][
@@ -71,7 +71,7 @@ def read_routes(filepath):
     return routes
 
 
-def calculate_emissions(config, columns=["CO2 [kg]"]):
+def calculate_emissions(config, columns=["CO2 [kg]"], overwrite=False):
     """
     """
 
@@ -97,7 +97,9 @@ def calculate_emissions(config, columns=["CO2 [kg]"]):
     imo_by_type = os.path.join(
         os.path.expanduser("~"),
         config["model_data"],
-        "imo_by_type_" + ''.join(i for i in config["scenario"] if i.isdigit()) + ".pkl",
+        "imo_by_type_"
+        + "".join(i for i in config["scenario"] if i.isdigit())
+        + ".pkl",
     )
     with open(imo_by_type, "rb") as f:
         ships_per_ship_class = pickle.load(f)
@@ -124,43 +126,50 @@ def calculate_emissions(config, columns=["CO2 [kg]"]):
     for filepath in filepaths:
         routes = read_routes(filepath)
 
-        emissions = interpolate_emissions(
-            routes,
-            ship_classes=[
-                i
-                for i in model_data.index.get_level_values(0).unique()
-                # if not " FS" in i
-            ],
-            engine_types=[
-                i for i in model_data.index.get_level_values(1).unique()
-            ],  # ["Electrical", "Propulsion"]
-            emission_types=emission_types,
-            ships_per_ship_class=ships_per_ship_class,
-            model_data=model_data,
-            resample=config["resample"],
-        )
-        model_data.index.get_level_values(0).unique()
 
-
-        df_emissions = pd.concat(emissions.values()).sort_index()
-
-        # import pdb;pdb.set_trace()
         outputfile = os.path.join(
             outputpath,
-            os.path.basename(filepath).replace(
-                "ship_routes", "ship_emissions"
-            ).replace("csv", "zip"),
-        )
-        filename = os.path.basename(filepath).replace(
-            "ship_routes", "ship_emissions"
+            os.path.basename(filepath)
+            .replace("ship_routes", "ship_emissions")
+            .replace("csv", "zip"),
         )
 
-        compression_options = dict(method='zip', archive_name=filename)
-        df_emissions.to_csv(outputfile, compression=compression_options)
+        if Path(outputfile).is_file() and overwrite is False:
+            logging.warning(
+                "Skip writing {} because already exists and overwrite is set to False".format(outputfile)
+            )
+        else:
+            emissions = interpolate_emissions(
+                routes,
+                ship_classes=[
+                    i
+                    for i in model_data.index.get_level_values(0).unique()
+                    # if not " FS" in i
+                ],
+                engine_types=[
+                    i for i in model_data.index.get_level_values(1).unique()
+                ],  # ["Electrical", "Propulsion"]
+                emission_types=emission_types,
+                ships_per_ship_class=ships_per_ship_class,
+                model_data=model_data,
+                resample=config["resample"],
+            )
+            model_data.index.get_level_values(0).unique()
+
+            df_emissions = pd.concat(emissions.values()).sort_index()
+
+
+            filename = os.path.basename(filepath).replace(
+                "ship_routes", "ship_emissions"
+            )
+
+            compression_options = dict(method="zip", archive_name=filename)
+            df_emissions.to_csv(outputfile, compression=compression_options)
+
 
         # # Write to zip file
         # zipped_ship_routes.write(
         #     outputfile, arcname=os.path.basename(outputfile)
         # )
         # os.remove(outputfile)
-    #zipped_ship_routes.close()
+    # zipped_ship_routes.close()

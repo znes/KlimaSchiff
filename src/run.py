@@ -27,12 +27,20 @@ import preprocess as preprocess
     type=int,
     help="Number of processes (int) when using multiprocessing parallel computing",
 )
+@click.option(
+    "-o",
+    "--overwrite",
+    type=bool,
+    default=False,
+    help="If True, existing files will be overwritten. Default: False",
+)
+
 @click.pass_context
-def cli(ctx, preprocess, parallel):
+def cli(ctx, preprocess, parallel, overwrite):
     ctx.ensure_object(dict)
     ctx.obj["PREPROCESS"] = preprocess
     ctx.obj["PARALLEL"] = parallel
-
+    ctx.obj["OVERWRITE"] = overwrite
 
 @cli.command()
 def reduce_ais():
@@ -51,32 +59,43 @@ def merge_ais():
 
     preprocess.merge_ais_data(config)
 
+
 @cli.command()
 def unique_imos():
     calc_unique_imos()
+
 
 # helper to be used in different commands...
 def _build_emission_models(config):
 
     model_data_path = os.path.join(
-        os.path.expanduser("~"),
-        config["model_data"])
+        os.path.expanduser("~"), config["model_data"]
+    )
 
     if not os.path.exists(model_data_path):
         os.makedirs(model_data_path)
 
-    preprocess.merge_lcpa_models(
-        config=config)
+    preprocess.merge_lcpa_models(config=config)
 
-    scenario_names = ["2015_sq", "2030_low", "2030_high", "2040_low", "2040_high"]
+    scenario_names = [
+        "2015_sq",
+        "2030_low",
+        "2030_high",
+        "2040_low",
+        "2040_high",
+    ]
     if config["scenario"] not in scenario_names:
-        raise ValueError("Scenario: {} does not exist.".format(config["scenario"]))
-        
+        raise ValueError(
+            "Scenario: {} does not exist.".format(config["scenario"])
+        )
+
     for name in scenario_names:
         preprocess.append_additional_emissions_to_lcpa(
             scenario=name,
-            output_dir=os.path.join(os.path.expanduser("~"), config["model_data"]),
-            config=config
+            output_dir=os.path.join(
+                os.path.expanduser("~"), config["model_data"]
+            ),
+            config=config,
         )
 
     preprocess.build_imo_lists(config)
@@ -105,8 +124,7 @@ def calc_emissions(ctx):
 
     # create up-to-date model file
     _build_emission_models(config)
-
-    calculate_emissions(config, columns="all")
+    calculate_emissions(config, columns="all", overwrite=ctx.obj["OVERWRITE"])
 
 
 @cli.command()
@@ -176,4 +194,5 @@ def all(ctx):
 
 if __name__ == "__main__":
     from logger import logger
+
     cli(obj={})

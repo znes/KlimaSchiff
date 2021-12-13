@@ -105,14 +105,13 @@ def merge_ais_data(config):
 def merge_lcpa_models(
     input_path=os.path.join("emission_model", "lcpa-models"),
     lcpa_model_name="lcpa_model.csv",
-    config=None
+    config=None,
 ):
     """ Merges raw lcpa files
     """
     output_path = os.path.join(
-        os.path.expanduser("~"),
-        config["model_data"],
-        lcpa_model_name)
+        os.path.expanduser("~"), config["model_data"], lcpa_model_name
+    )
 
     logger.info(
         "Merging lcpa models from {0} to one file {1}".format(
@@ -137,22 +136,20 @@ def append_additional_emissions_to_lcpa(
     scenario="2015_sq",
     lcpa_model_name="lcpa_model.csv",
     output_dir=None,
-    config=None
+    config=None,
 ):
     """
     """
     lcpa_model_path = os.path.join(
-        os.path.expanduser("~"),
-        config["model_data"],
-        lcpa_model_name)
+        os.path.expanduser("~"), config["model_data"], lcpa_model_name
+    )
 
     # read the lcpa model to extend be additional pollutants
     df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1, 2])
 
     # get the maximum speed per shiptype
     max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
-    #.to_csv("emission_model/max_speed_per_type.csv")
-
+    # .to_csv("emission_model/max_speed_per_type.csv")
 
     def _add_emissions(row, scenario, dataframe):
         """
@@ -179,10 +176,14 @@ def append_additional_emissions_to_lcpa(
             bc = 0
             ash = 0
             # except pm which is -95% of, replace with 0.05 * Tier II values
-            pm = dataframe.loc[
-                row.name[0].replace("FS", "Tier II"),
-                row.name[1],
-                row.name[2]]["PM [kg]"] * 0.05
+            pm = (
+                dataframe.loc[
+                    row.name[0].replace("FS", "Tier II"),
+                    row.name[1],
+                    row.name[2],
+                ]["PM [kg]"]
+                * 0.05
+            )
 
             if row.name[1] == "Electrical":
                 poa = 0.15 * energy_factor
@@ -248,7 +249,11 @@ def append_additional_emissions_to_lcpa(
     df[
         ["BC [kg]", "ASH [kg]", "POA [kg]", "CO [kg]", "NMVOC [kg]", "PM [kg]"]
     ] = df.apply(
-        _add_emissions, axis=1, result_type="expand", scenario=scenario, dataframe=df
+        _add_emissions,
+        axis=1,
+        result_type="expand",
+        scenario=scenario,
+        dataframe=df,
     )
 
     if not os.path.exists(output_dir):
@@ -383,7 +388,6 @@ def build_imo_lists(config):
     ):
         imo_by_type_2040[k] = v.tolist()
 
-
     # modelpath = os.path.join(
     #     os.path.expanduser("~"),
     #     config["model_data"],
@@ -408,6 +412,7 @@ def build_imo_lists(config):
         pickle.dump(imo_by_type_2030, f)
     with open(os.path.join(imo_path, "imo_by_type_2040.pkl"), "wb") as f:
         pickle.dump(imo_by_type_2040, f)
+
 
 if __name__ == "__main__":
 
