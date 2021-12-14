@@ -200,16 +200,20 @@ def append_additional_emissions_to_lcpa(
                     if row["Speed [m/second]"] > (
                         0.5 * max_speed.loc[row.name[0]]
                     ):
-                        nmvoc = 0.6 * energy_factor  # cruise mode
+                        nmvoc = 0.6 * energy_factor # cruise mode
+                    elif row["Speed [m/second]"] > 0.51444:
+                        nmvoc = 1.8 * energy_factor
                     else:
-                        nmvoc = 1.8 * energy_factor  # hotelling
+                        nmvoc = 0  # hotelling
                 else:
                     if row["Speed [m/second]"] > (
                         0.35 * max_speed.loc[row.name[0]]
                     ):
                         nmvoc = 0.5 * energy_factor
-                    else:
+                    elif row["Speed [m/second]"] > 0.51444:
                         nmvoc = 1.5 * energy_factor
+                    else:
+                        0
 
             return (bc, ash, poa, co, nmvoc, pm)
 
@@ -226,23 +230,27 @@ def append_additional_emissions_to_lcpa(
                 co = 0.54 * energy_factor
                 ash = 0.02 * 0.001 * fuel_factor
 
-                if any(
-                    i in row.name[0]
-                    for i in ["Bulker", "Tanker", "Container", "MPV", "Car"]
+            if any(
+                i in row.name[0]
+                for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
+            ):
+                if row["Speed [m/second]"] > (
+                    0.5 * max_speed.loc[row.name[0]]
                 ):
-                    if row["Speed [m/second]"] > (
-                        0.5 * max_speed.loc[row.name[0]]
-                    ):
-                        nmvoc = 0.6 * energy_factor  # cruise mode
-                    else:
-                        nmvoc = 1.8 * energy_factor  # hotelling
+                    nmvoc = 0.6 * energy_factor # cruise mode
+                elif row["Speed [m/second]"] > 0.51444:
+                    nmvoc = 1.8 * energy_factor
                 else:
-                    if row["Speed [m/second]"] > (
-                        0.35 * max_speed.loc[row.name[0]]
-                    ):
-                        nmvoc = 0.5 * energy_factor
-                    else:
-                        nmvoc = 1.5 * energy_factor
+                    nmvoc = 0  # hotelling
+            else:
+                if row["Speed [m/second]"] > (
+                    0.35 * max_speed.loc[row.name[0]]
+                ):
+                    nmvoc = 0.5 * energy_factor
+                elif row["Speed [m/second]"] > 0.51444:
+                    nmvoc = 1.5 * energy_factor
+                else:
+                    0
 
             return (bc, ash, poa, co, nmvoc, pm)
 
