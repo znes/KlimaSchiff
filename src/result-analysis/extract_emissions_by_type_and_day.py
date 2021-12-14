@@ -19,7 +19,7 @@ imo_by_type = os.path.join(
 with open(imo_by_type, "rb") as f:
     ships_per_ship_class = pickle.load(f)
 
-scenarios = ["2015_sq", "2030_low", "2030_high", "2040_low"]
+scenarios = ["2015_sq", "2030_low", "2030_high", "2040_low", "2040_high"]
 
 for scenario in scenarios:
     scenario_path = os.path.join(
@@ -53,8 +53,9 @@ for scenario in scenarios:
         os.makedirs(result_path)
 
     emissions_by_type_and_day.to_csv(
-        os.path.join(result_path, "total_emissions_by_type_and_day.csv",)
+        os.path.join(result_path, "total_emissions_by_type_and_day_" + scenario + ".csv",)
     )
+
 
 # emissions_by_type_and_day["Shipclass"] = [
 #     i[1].split(' ')[0] for i in emissions_by_type_and_day.index]
