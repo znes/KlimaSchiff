@@ -214,7 +214,6 @@ def append_additional_emissions_to_lcpa(
             return (bc, ash, poa, co, nmvoc, pm)
 
         else:
-            import pdb;pdb.set_trace()
             if row.name[1] == "Electrical":
                 bc = 0.15 * energy_factor  # in g/KWh -> kg
                 poa = 0.15 * energy_factor
