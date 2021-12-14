@@ -89,6 +89,17 @@ df.to_latex(
     caption="All ships by class and gross tonnage weigth as of 2015",
     label="fig:shiptype_by_gt",
 )
+# Weight distribution---------------------------------------------------------
+# for class
+sns.histplot(
+    data=ships[ships["NEWCLASS"].isin(["Tanker"])],
+    x="DWT",
+    hue="NEWCLASS",
+    multiple="stack",
+    bins=100,
+)
+["GT"].hist(bins=100)
+
 
 # Age structure --------------------------------------------------------------
 # cutter = [(0, 5), (5, 10), (10, 15), (15, 20), (20, 25), (25, 100)]
