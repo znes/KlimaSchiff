@@ -213,7 +213,7 @@ def append_additional_emissions_to_lcpa(
                     elif row["Speed [m/second]"] > 0.51444:
                         nmvoc = 1.5 * energy_factor
                     else:
-                        0
+                        nmvoc = 0
 
             return (bc, ash, poa, co, nmvoc, pm)
 
