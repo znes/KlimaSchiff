@@ -190,7 +190,7 @@ def append_additional_emissions_to_lcpa(
                 co = 0.54 * energy_factor
                 nmvoc = 0.4 * energy_factor
             else:
-                poa = 0.2 * energy_factor
+                poa = 0.1 * energy_factor
                 co = 0.54 * energy_factor
 
                 if any(
@@ -226,7 +226,7 @@ def append_additional_emissions_to_lcpa(
                 nmvoc = 0.4 * energy_factor
             else:
                 bc = 0.03 * energy_factor
-                poa = 0.2 * energy_factor
+                poa = 0.1 * energy_factor
                 co = 0.54 * energy_factor
                 ash = 0.02 * 0.001 * fuel_factor
 
