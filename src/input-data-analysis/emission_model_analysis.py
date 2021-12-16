@@ -21,34 +21,54 @@ shiptypes = set(
         if not "FS" in i
     ]
 )
-sns.set_style('darkgrid')
+df.columns[8:13]
+sns.set_style("darkgrid")
 for shiptype in shiptypes:
-    pollutant = "CO2 [kg]"
-    engine = "Propulsion"
-    #shiptype = "Tanker SuezMax"
-    plt.figure()
-    ax = sns.lineplot(
-        data=df.loc[idx[shiptype + " FS", engine]].reset_index(),
-        x="Speed [m/second]",
-        y=pollutant,
-        label="FS",
-    )
-    # ax = [pollutant].plot(label="FS")
-    sns.lineplot(
-        data=df.loc[idx[shiptype + " Tier II", engine]].reset_index(),
-        x="Speed [m/second]",
-        y=pollutant,
-        label="Tier II",
-        ax=ax
-    )
-    sns.lineplot(
-        data=df.loc[idx[shiptype + " Tier I", engine]].reset_index(),
-        x="Speed [m/second]",
-        y=pollutant,
-        label="Tier I",
-        ax=ax
-    )
-    ax.grid()
-    ax.set_xlim(0, 13)
-    ax.legend()
-    plt.savefig("figures/{}-model-{}.pdf".format(pollutant, shiptype))
+    for pollutant in df.columns[8:13].drop("CH4 [kg]"):
+        # if "Ro-Pax" in shiptype:
+        # pollutant = "Energy [J]"
+        engine = "Propulsion"
+        # shiptype = "Tanker SuezMax"
+        plt.figure()
+        ax = sns.lineplot(
+            data=df.loc[idx[shiptype + " FS", engine]].reset_index(),
+            x="Speed [m/second]",
+            y=pollutant,
+            label="FS",
+        )
+        # ax = [pollutant].plot(label="FS")
+        sns.lineplot(
+            data=df.loc[idx[shiptype + " Tier II", engine]].reset_index(),
+            x="Speed [m/second]",
+            y=pollutant,
+            label="Tier II",
+            ax=ax,
+        )
+        ax = sns.lineplot(
+            data=df.loc[idx[shiptype + " FS", "Electrical"]].reset_index(),
+            x="Speed [m/second]",
+            y=pollutant,
+            label="Aux-FS",
+        )
+        # ax = [pollutant].plot(label="FS")
+        sns.lineplot(
+            data=df.loc[
+                idx[shiptype + " Tier II", "Electrical"]
+            ].reset_index(),
+            x="Speed [m/second]",
+            y=pollutant,
+            label="Aux-Tier II",
+            ax=ax,
+        )
+        # sns.lineplot(
+        #     data=df.loc[idx[shiptype + " Tier I", engine]].reset_index(),
+        #     x="Speed [m/second]",
+        #     y=pollutant,
+        #     label="Tier I",
+        #     ax=ax
+        # )
+        ax.grid()
+        ax.set_xlim(0, 13)
+        ax.set_title(shiptype)
+        ax.legend()
+        plt.savefig("figures/{}-model-{}.pdf".format(pollutant, shiptype))

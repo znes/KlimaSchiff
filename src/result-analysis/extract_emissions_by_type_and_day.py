@@ -53,7 +53,10 @@ for scenario in scenarios:
         os.makedirs(result_path)
 
     emissions_by_type_and_day.to_csv(
-        os.path.join(result_path, "total_emissions_by_type_and_day_" + scenario + ".csv",)
+        os.path.join(
+            result_path,
+            "total_emissions_by_type_and_day_" + scenario + ".csv",
+        )
     )
 
 
