@@ -136,9 +136,12 @@ def calculate_emissions(config, columns=["CO2 [kg]"], overwrite=False):
 
         if Path(outputfile).is_file() and overwrite is False:
             logging.warning(
-                "Skip writing {} because already exists and overwrite is set to False".format(outputfile)
+                "Skip writing {} because already exists and overwrite is set to False.".format(outputfile)
             )
         else:
+            logging.info(
+                "Writing emissions to file {}.".format(outputfile)
+            )
             emissions = interpolate_emissions(
                 routes,
                 ship_classes=[

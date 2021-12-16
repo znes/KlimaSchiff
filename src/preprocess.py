@@ -197,21 +197,13 @@ def append_additional_emissions_to_lcpa(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    if row["Speed [m/second]"] > (
-                        0.5 * max_speed.loc[row.name[0]]
-                    ):
+                    if row["Speed [m/second]"] > 0.51444:
                         nmvoc = 0.6 * energy_factor # cruise mode
-                    elif row["Speed [m/second]"] > 0.51444:
-                        nmvoc = 1.8 * energy_factor
                     else:
-                        nmvoc = 0  # hotelling
+                        nmvoc = 0
                 else:
-                    if row["Speed [m/second]"] > (
-                        0.35 * max_speed.loc[row.name[0]]
-                    ):
-                        nmvoc = 0.5 * energy_factor
-                    elif row["Speed [m/second]"] > 0.51444:
-                        nmvoc = 1.5 * energy_factor
+                    if row["Speed [m/second]"] > 0.51444:
+                        nmvoc = 0.5 * energy_factor # cruise mode
                     else:
                         nmvoc = 0
 
@@ -234,21 +226,13 @@ def append_additional_emissions_to_lcpa(
                 i in row.name[0]
                 for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
             ):
-                if row["Speed [m/second]"] > (
-                    0.5 * max_speed.loc[row.name[0]]
-                ):
+                if row["Speed [m/second]"] > 0.51444:
                     nmvoc = 0.6 * energy_factor # cruise mode
-                elif row["Speed [m/second]"] > 0.51444:
-                    nmvoc = 1.8 * energy_factor
                 else:
-                    nmvoc = 0  # hotelling
+                    nmvoc = 0
             else:
-                if row["Speed [m/second]"] > (
-                    0.35 * max_speed.loc[row.name[0]]
-                ):
-                    nmvoc = 0.5 * energy_factor
-                elif row["Speed [m/second]"] > 0.51444:
-                    nmvoc = 1.5 * energy_factor
+                if row["Speed [m/second]"] > 0.51444:
+                    nmvoc = 0.5 * energy_factor # cruise mode
                 else:
                     nmvoc = 0
 
