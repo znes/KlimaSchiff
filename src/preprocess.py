@@ -197,13 +197,16 @@ def append_additional_emissions_to_lcpa(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    if row["Speed [m/second]"] > 0.51444:
+                    if row["Speed [m/second]"] > 0.51444*2:
                         nmvoc = 0.6 * energy_factor # cruise mode
+                        #nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
                     else:
                         nmvoc = 0
                 else:
-                    if row["Speed [m/second]"] > 0.51444:
-                        nmvoc = 0.5 * energy_factor # cruise mode
+                    if row["Speed [m/second]"] > 0.51444*2:
+                        nmvoc = 0.5 * energy_factor # cruise
+                        #nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+
                     else:
                         nmvoc = 0
 
@@ -226,13 +229,16 @@ def append_additional_emissions_to_lcpa(
                 i in row.name[0]
                 for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
             ):
-                if row["Speed [m/second]"] > 0.51444:
+                if row["Speed [m/second]"] > 0.51444*2:
                     nmvoc = 0.6 * energy_factor # cruise mode
+                    #nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
                 else:
                     nmvoc = 0
             else:
-                if row["Speed [m/second]"] > 0.51444:
-                    nmvoc = 0.5 * energy_factor # cruise mode
+                if row["Speed [m/second]"] > 0.51444*2:
+                    nmvoc = 0.5 * energy_factor # cruise
+                    #nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+
                 else:
                     nmvoc = 0
 
