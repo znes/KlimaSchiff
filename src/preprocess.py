@@ -148,7 +148,7 @@ def append_additional_emissions_to_lcpa(
     df = pd.read_csv(lcpa_model_path, sep=";", index_col=[0, 1, 2])
 
     # get the maximum speed per shiptype
-    max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
+    # max_speed = df.groupby(level=0).apply(max)["Speed [m/second]"]
     # .to_csv("emission_model/max_speed_per_type.csv")
 
     def _add_emissions(row, scenario, dataframe):
@@ -185,62 +185,60 @@ def append_additional_emissions_to_lcpa(
                 * 0.05
             )
 
+            # auxiliary engine (medium speed diesel)
             if row.name[1] == "Electrical":
-                poa = 0.15 * energy_factor
-                co = 0.54 * energy_factor
-                nmvoc = 0.4 * energy_factor
+                poa = 0.2 * energy_factor  * 0.4 # from Schwarzkopf 2016 (0.4 for efficiency losses)
+                co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
+                nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3
+            # main engine
             else:
-                poa = 0.1 * energy_factor
-                co = 0.54 * energy_factor
+                poa = 0.2 * energy_factor # from Schwarzkopf 2016
 
+                # types slow speed medium diesel engine
                 if any(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    if row["Speed [m/second]"] > 0.51444*2:
-                        nmvoc = 0.6 * energy_factor # cruise mode
-                        #nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                    else:
-                        nmvoc = 0
-                else:
-                    if row["Speed [m/second]"] > 0.51444*2:
-                        nmvoc = 0.5 * energy_factor # cruise
-                        #nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                    #nmvoc = 0.6 * energy_factor # cruise mode
+                    nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                    co = 3.24 * fuel_factor / 1e3  # EEA 2021 p.21
 
-                    else:
-                        nmvoc = 0
+                else:
+                    # types for medium speed diesel engine
+                    #nmvoc = 0.5 * energy_factor # cruise
+                    nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                    co = 4.45 * fuel_factor / 1e3
 
             return (bc, ash, poa, co, nmvoc, pm)
 
         else:
             if row.name[1] == "Electrical":
-                bc = 0.15 * energy_factor  # in g/KWh -> kg
-                poa = 0.15 * energy_factor
-                co = 0.54 * energy_factor
-                ash = 0.02 * 0.001 * fuel_factor
-                nmvoc = 0.4 * energy_factor
+                ash = 0.02 * 0.001 * fuel_factor # Schwarzkopf 2021
+                poa = 0.2 * energy_factor * 0.4 # from Schwarzkopf 2016  (0.4 for efficiency losses)
+                co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
+                nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3 # EEA
+                bc = (0.085 + 0.054) / 2 * fuel_factor / 1e3 # EEA
             else:
-                bc = 0.03 * energy_factor
-                poa = 0.1 * energy_factor
-                co = 0.54 * energy_factor
+                poa = 0.2 * energy_factor * 0.4 # from Schwarzkopf 2016  (0.4 for efficiency losses)
                 ash = 0.02 * 0.001 * fuel_factor
 
-            if any(
-                i in row.name[0]
-                for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
-            ):
-                if row["Speed [m/second]"] > 0.51444*2:
-                    nmvoc = 0.6 * energy_factor # cruise mode
-                    #nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                else:
-                    nmvoc = 0
-            else:
-                if row["Speed [m/second]"] > 0.51444*2:
-                    nmvoc = 0.5 * energy_factor # cruise
-                    #nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                if any(
+                    i in row.name[0]
+                    for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
+                ):
+
+                    #nmvoc = 0.6 * energy_factor # cruise mode
+                    nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                    co = 3.24 * fuel_factor / 1e3  # EEA 2021 p.21
+                    bc = 0.0481 * fuel_factor / 1e3
 
                 else:
-                    nmvoc = 0
+                    # types for medium speed diesel engine
+                    #nmvoc = 0.5 * energy_factor # cruise
+                    nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
+                    co = 4.45 * fuel_factor / 1e3
+                    bc = 0.0484 * fuel_factor / 1e3
+
 
             return (bc, ash, poa, co, nmvoc, pm)
 
