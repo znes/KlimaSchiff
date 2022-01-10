@@ -192,7 +192,7 @@ def append_additional_emissions_to_lcpa(
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3
             # main engine
             else:
-                poa = 0.2 * energy_factor # from Schwarzkopf 2016
+                poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016
 
                 # types slow speed medium diesel engine
                 if any(
@@ -219,7 +219,7 @@ def append_additional_emissions_to_lcpa(
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3 # EEA
                 bc = (0.085 + 0.054) / 2 * fuel_factor / 1e3 # EEA
             else:
-                poa = 0.2 * energy_factor * 0.4 # from Schwarzkopf 2016  (0.4 for efficiency losses)
+                poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.4 for efficiency losses)
                 ash = 0.02 * 0.001 * fuel_factor
 
                 if any(
