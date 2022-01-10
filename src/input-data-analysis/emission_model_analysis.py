@@ -21,12 +21,14 @@ shiptypes = set(
         if not "FS" in i
     ]
 )
-df.columns[8:13]
+
+pollutants = df.columns[8:13].drop("CH4 [kg]")
+#pollutants = ["Energy [J]", "NMVOC [kg]"]
 sns.set_style("darkgrid")
 for shiptype in shiptypes:
-    for pollutant in df.columns[8:13].drop("CH4 [kg]"):
+    for pollutant in pollutants:
         # if "Ro-Pax" in shiptype:
-        # pollutant = "Energy [J]"
+        #pollutant = "Energy [J]"
         engine = "Propulsion"
         # shiptype = "Tanker SuezMax"
         plt.figure()

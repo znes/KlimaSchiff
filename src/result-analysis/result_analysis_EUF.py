@@ -4,7 +4,6 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 with open("config.json") as file:
     config = json.load(file)
 
@@ -12,23 +11,23 @@ config[
     "intermediate_data"
 ] = "nextcloud-znes/KlimaSchiff/result_data/emissions"
 
-scenario = "2015_sq"
-scenario_path = os.path.join(
-    os.path.expanduser("~"), config["intermediate_data"], scenario
-)
+
 #
 # df_n = pd.read_csv(
-#     "/home/admin/klimaschiff/intermediate_data_new/2015_sq/ship_emissions/ship_emissions_20150107.csv")
+#     "/home/admin/klimaschiff/intermediate_data_new/2015_sq/ship_emissions/ship_emissions_20150107.csv",
+#     nrows=100000)
 # df_o = pd.read_csv(
-#     "/home/admin/klimaschiff/intermediate_data/2015_sq/ship_emissions/ship_emissions_20150107.csv")
-#
+#     "/home/admin/klimaschiff/intermediate_data/2015_sq/ship_emissions/ship_emissions_20150107.csv",
+#     nrows=100000)
 # df_n[["Propulsion-NMVOC [kg]", "Electrical-NMVOC [kg]"]].sum().sum() / df_o[["Propulsion-NMVOC [kg]", "Electrical-NMVOC [kg]"]].sum().sum()
-# df_n[["Propulsion-POA [kg]", "Electrical-POA [kg]"]].sum().sum() / df_o[["Propulsion-POA [kg]", "Electrical-POA [kg]"]].sum().sum()
+# df_n[["Propulsion-CO [kg]", "Electrical-CO [kg]"]].sum().sum() / df_o[["Propulsion-CO [kg]", "Electrical-CO [kg]"]].sum().sum()
+# df_n[["Propulsion-BC [kg]", "Electrical-BC [kg]"]].sum().sum() / df_o[["Propulsion-BC [kg]", "Electrical-BC [kg]"]].sum().sum()
+# pd.concat([df_o.sum(), df_n.sum()], axis=1)
 
-df = pd.read_csv(
-    os.path.join(scenario_path, "total_emissions_by_type_and_day.csv",),
-    parse_dates=True,
-)
+# df = pd.read_csv(
+#     os.path.join(scenario_path, "total_emissions_by_type_and_day.csv",),
+#     parse_dates=True,
+# )
 
 # df_m = df.unstack(level=1).resample("M").sum().unstack().unstack(level=0).swaplevel(0,1)
 
@@ -72,7 +71,7 @@ def category(row):
 # -----------------------------------------------------------------------------
 # scenario comparison
 # ---------------------------------------------------------------------------
-scenarios = ["2015_sq", "2030_low", "2030_high", "2040_low", "2040_high"]
+scenarios = ["2015_sq"]#, "2030_low", "2030_high", "2040_low", "2040_high"]
 pollutants = [
     i + " [kg]"
     for i in ["SOx", "NOx", "PM", "CO", "CO2", "ASH", "POA", "NMVOC", "BC"]
@@ -80,18 +79,14 @@ pollutants = [
 
 d_annual = {}
 d_daily = {}
-with open("config.json") as file:
-    config = json.load(file)
-config[
-    "intermediate_data"
-] = "nextcloud-znes/KlimaSchiff/result_data/emissions"
+
 for scenario in scenarios:
     scenario_path = os.path.join(
         os.path.expanduser("~"), config["intermediate_data"], scenario,
     )
 
     df = pd.read_csv(
-        os.path.join(scenario_path, "total_emissions_by_type_and_day.csv"),
+        os.path.join(scenario_path, "total_emissions_by_type_and_day_" + scenario + ".csv"),
         parse_dates=True,
     )
 
@@ -114,6 +109,18 @@ for scenario in scenarios:
     df_annual_sums["All"] = df_annual_sums.sum(axis=1)
     d_annual[scenario] = df_annual_sums  # .groupby("Pollutant").sum()
 
+
+a = d_annual["2015_sq"].groupby("Pollutant").sum().loc[pollutants].T
+a = a.div(1e6) # kg -> Gg
+a.columns = [i.strip(" [kg]") for i in a.columns]
+a.to_latex(
+    "tables/annual_emissions_Gg_per_type_{}.tex".format(scenario),
+    label="tab:annual_emissions_Gg_per_type_{}".format(scenario),
+    caption="Annual emissions for each shiptype in Gg in the scenario {}.".format(
+        scenario
+    ),
+    float_format="{:0.2f}".format,
+)
 
 # ----------------------------------------------------------------------------
 # annual sums per per ship type
@@ -163,22 +170,24 @@ for shipclass in _df.index.get_level_values(0).unique():
         data.loc[shipclass, pollutant]
         .resample("1M")
         .mean()
+        .div(1e6)
         .plot(style="-o", grid=True, label=shipclass)
     )
     ax.set_xticks(positions)
     ax.set_xticklabels(labels)
-    ax.set_ylabel("Emissions in kg")
+    ax.set_ylabel("Emissions in Gg")
     ax.set_xlim(positions[0], positions[-1])
-    ax.set_xlabel("Day")
+    ax.set_xlabel("Month")
+
     lgd = ax.legend(title="Type", bbox_to_anchor=(1.02, 1), loc="upper left")
-    ax.set_title(
-        "Average daily {}-Emissions in {}".format(
-            pollutant.strip(" [kg]"), scenario
-        )
-    )
+    # ax.set_title(
+    #     "Average daily {}-Emissions in {}".format(
+    #         pollutant.strip(" [kg]"), scenario
+    #     )
+    # )
     plt.savefig(
         "figures/results/average_daily_{}_emissions_{}.pdf".format(
-            pollutant, scenario
+            pollutant.split(" ")[0], scenario
         ),
         bbox_extra_artists=(lgd,),
         bbox_inches="tight",

@@ -25,6 +25,7 @@ import preprocess as preprocess
     "--parallel",
     "-l",
     type=int,
+    default=0,
     help="Number of processes (int) when using multiprocessing parallel computing",
 )
 @click.option(

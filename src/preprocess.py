@@ -187,7 +187,7 @@ def append_additional_emissions_to_lcpa(
 
             # auxiliary engine (medium speed diesel)
             if row.name[1] == "Electrical":
-                poa = 0.2 * energy_factor  * 0.4 # from Schwarzkopf 2016 (0.4 for efficiency losses)
+                poa = 0.2 * energy_factor  * 0.45 # from Schwarzkopf 2016 (0.45 for efficiency losses)
                 co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3
             # main engine
@@ -214,7 +214,7 @@ def append_additional_emissions_to_lcpa(
         else:
             if row.name[1] == "Electrical":
                 ash = 0.02 * 0.001 * fuel_factor # Schwarzkopf 2021
-                poa = 0.2 * energy_factor * 0.4 # from Schwarzkopf 2016  (0.4 for efficiency losses)
+                poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
                 co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3 # EEA
                 bc = (0.085 + 0.054) / 2 * fuel_factor / 1e3 # EEA

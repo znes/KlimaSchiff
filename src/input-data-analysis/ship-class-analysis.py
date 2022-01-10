@@ -145,4 +145,9 @@ for k, cutter in dwt_classes.items():
 df_dwt = pd.DataFrame(dwt_d)
 df_dwt["Weighttype"] = "DWT"
 df_dwt.set_index("Weighttype", append=True, drop=True, inplace=True)
-pd.concat([df_dwt, df_gt]).to_csv("tables/number_of_ships_per_weightclass.csv")
+combined =  pd.concat([df_dwt, df_gt])
+combined.to_csv("tables/number_of_ships_per_weightclass.csv")
+combined.fillna(0).astype("int").to_latex(
+    "tables/number_of_ships_per_weightclass.tex",
+    caption="Number of ships per shiptype and weightclass.",
+    label="tab:number_of_ships_per_weightclass")
