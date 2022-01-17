@@ -187,10 +187,8 @@ def append_additional_emissions_to_lcpa(
 
             # auxiliary engine (medium speed diesel)
             if row.name[1] == "Electrical":
-                bc = 0.0695 * fuel_factor / 1e3
                 poa = 0.2 * energy_factor  * 0.45 # from Schwarzkopf 2016 (0.45 for efficiency losses)
                 co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
-                ash =0.02 * 0.001 * fuel_factor
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3
 
             # main engine
@@ -202,19 +200,14 @@ def append_additional_emissions_to_lcpa(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    #nmvoc = 0.6 * energy_factor # cruise mode
-                    bc = 0.0327 * fuel_factor / 1e3 #EEA 2021 p.28 cruise mode
                     poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
                     co = 2.52 * fuel_factor / 1e3  # EEA 2021 p.28 for cruise mode
-                    ash = 0.02 * 0.001 * fuel_factor # Schwarzkopf 2021
                     nmvoc = 1.33 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA for cruise mode
 
                 else:
                     # types for medium speed diesel engine
-                    bc = 0.0329 * fuel_factor / 1e3 # EEA 2021 cruise mode
                     poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
                     co = 3.47 * fuel_factor / 1e3 # EEA 2021 cruise mode
-                    ash = 0.02 * 0.001 * fuel_factor # Schwarzkopf 2021
                     nmvoc = 1.52 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA cruise mode
 
             return (bc, ash, poa, co, nmvoc, pm)
@@ -234,15 +227,12 @@ def append_additional_emissions_to_lcpa(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-
-                    #nmvoc = 0.6 * energy_factor # cruise mode
                     nmvoc = 1.33 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
                     co = 2.52 * fuel_factor / 1e3  # EEA 2021 p.21
-                    bc = 0.0329 * fuel_factor / 1e3
+                    bc = 0.0327 * fuel_factor / 1e3
 
                 else:
                     # types for medium speed diesel engine
-                    #nmvoc = 0.5 * energy_factor # cruise
                     nmvoc = 1.52 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
                     co = 3.47 * fuel_factor / 1e3
                     bc = 0.0329 * fuel_factor / 1e3
