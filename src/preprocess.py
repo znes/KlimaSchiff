@@ -200,13 +200,11 @@ def append_additional_emissions_to_lcpa(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
                     co = 2.52 * fuel_factor / 1e3  # EEA 2021 p.28 for cruise mode
                     nmvoc = 1.33 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA for cruise mode
 
                 else:
                     # types for medium speed diesel engine
-                    poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
                     co = 3.47 * fuel_factor / 1e3 # EEA 2021 cruise mode
                     nmvoc = 1.52 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA cruise mode
 
