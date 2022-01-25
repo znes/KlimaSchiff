@@ -9,7 +9,7 @@ with open("config.json") as file:
 
 config[
     "intermediate_data"
-] = "nextcloud-znes/KlimaSchiff/result_data/emissions"
+] = "nextcloud-znes/KlimaSchiff/final_results/emissions"
 
 
 #
@@ -71,7 +71,7 @@ def category(row):
 # -----------------------------------------------------------------------------
 # scenario comparison
 # ---------------------------------------------------------------------------
-scenarios = ["2015_sq"]#, "2030_low", "2030_high", "2040_low", "2040_high"]
+scenarios = ["2015_sq", "2030_low", "2030_high", "2040_low", "2040_high"]
 pollutants = [
     i + " [kg]"
     for i in ["SOx", "NOx", "PM", "CO", "CO2", "ASH", "POA", "NMVOC", "BC"]
@@ -86,7 +86,10 @@ for scenario in scenarios:
     )
 
     df = pd.read_csv(
-        os.path.join(scenario_path, "total_emissions_by_type_and_day_" + scenario + ".csv"),
+        os.path.join(
+            scenario_path,
+            "total_emissions_by_type_and_day_" + scenario + ".csv",
+        ),
         parse_dates=True,
     )
 
@@ -110,17 +113,17 @@ for scenario in scenarios:
     d_annual[scenario] = df_annual_sums  # .groupby("Pollutant").sum()
 
 
-a = d_annual["2015_sq"].groupby("Pollutant").sum().loc[pollutants].T
-a = a.div(1e6) # kg -> Gg
-a.columns = [i.strip(" [kg]") for i in a.columns]
-a.to_latex(
-    "tables/annual_emissions_Gg_per_type_{}.tex".format(scenario),
-    label="tab:annual_emissions_Gg_per_type_{}".format(scenario),
-    caption="Annual emissions for each shiptype in Gg in the scenario {}.".format(
-        scenario
-    ),
-    float_format="{:0.2f}".format,
-)
+# a = d_annual["2015_sq"].groupby("Pollutant").sum().loc[pollutants].T
+# a = a.div(1e6) # kg -> Gg
+# a.columns = [i.strip(" [kg]") for i in a.columns]
+# a.to_latex(
+#     "tables/annual_emissions_Gg_per_type_{}.tex".format(scenario),
+#     label="tab:annual_emissions_Gg_per_type_{}".format(scenario),
+#     caption="Annual emissions for each shiptype in Gg in the scenario {}.".format(
+#         scenario
+#     ),
+#     float_format="{:0.2f}".format,
+# )
 
 # ----------------------------------------------------------------------------
 # annual sums per per ship type
@@ -157,7 +160,7 @@ _df = _df.groupby("Pollutant").sum().loc[pollutants].T
 tuples = _df.index.map(lambda x: (x[1], pd.to_datetime(x[0])))
 _df.index = pd.MultiIndex.from_tuples(tuples, names=["class", "date"])
 _df = _df.T.unstack()
-
+# _df = _df.div(1e6)
 for shipclass in _df.index.get_level_values(0).unique():
     data = _df.unstack()
     positions = [
@@ -170,7 +173,7 @@ for shipclass in _df.index.get_level_values(0).unique():
         data.loc[shipclass, pollutant]
         .resample("1M")
         .mean()
-        .div(1e6)
+        .div(1e6)  # kg -> Gg
         .plot(style="-o", grid=True, label=shipclass)
     )
     ax.set_xticks(positions)
@@ -185,49 +188,83 @@ for shipclass in _df.index.get_level_values(0).unique():
     #         pollutant.strip(" [kg]"), scenario
     #     )
     # )
-    plt.savefig(
-        "figures/results/average_daily_{}_emissions_{}.pdf".format(
-            pollutant.split(" ")[0], scenario
-        ),
-        bbox_extra_artists=(lgd,),
-        bbox_inches="tight",
+plt.savefig(
+    "figures/results/average_daily_{}_emissions_{}.pdf".format(
+        pollutant.split(" ")[0], scenario
+    ),
+    bbox_extra_artists=(lgd,),
+    bbox_inches="tight",
+)
+data[pollutant].unstack(level=0).resample("1M").mean().div(1e6).to_csv(
+    "tables/average_daily_{}_emissions_{}.csv".format(
+        pollutant.split(" ")[0], scenario
     )
+)
+data[pollutant].unstack(level=0).resample("1M").mean().div(1e6).to_latex(
+    "tables/average_daily_{}_emissions_{}.tex".format(
+        pollutant.split(" ")[0], scenario
+    ),
+    label="tab:average_daily_{}_emissions_{}".format(
+        pollutant.split(" ")[0], scenario
+    ),
+    caption="Average daily {} emissions in scenario {} in Gg.".format(
+        pollutant.split(" ")[0], scenario
+    ),
+    float_format="{:0.2f}".format,
+)
 
 # ---------------------------------------------------------------------------
 # Share of aux of total emissions -
 # ---------------------------------------------------------------------------
 
-scenario = "2015_sq"
-temp = d_annual["2015_sq"].groupby(["Engine", "Pollutant"]).sum()
-temp = temp.loc["Electrical"].div(
-    temp.loc["Propulsion"] + temp.loc["Electrical"]
-)
-temp = temp.loc[pollutants + ["Energy [J]"]]
-temp.index = [i.strip("[kg]") for i in temp.index]
-temp.index = [i.strip("[J]") for i in temp.index]
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.heatmap(temp, annot=True)
-ax.set_title("Share of auxiliary engine emissions of total emissions.")
-plt.savefig(
-    "figures/results/aux_share_of_total_emissions_{}.pdf".format(scenario),
-    bbox_inches="tight",
-)
+for scenario in scenarios:
+    temp = d_annual[scenario].groupby(["Engine", "Pollutant"]).sum()
+    temp = temp.loc["Electrical"].div(
+        temp.loc["Propulsion"] + temp.loc["Electrical"]
+    )
+    temp = temp.loc[pollutants + ["Energy [J]"]]
+    temp.index = [i.strip("[kg]") for i in temp.index]
+    temp.index = [i.strip("[J]") for i in temp.index]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(temp, annot=True)
+    ax.set_title(
+        "Share of auxiliary engine emissions of total emissions {}.".format(
+            scenario
+        )
+    )
+    plt.savefig(
+        "figures/results/heatmap_aux_share_of_total_emissions_{}.pdf".format(
+            scenario
+        ),
+        bbox_inches="tight",
+    )
+    temp.to_csv(
+        "tables/heatmap_aux_share_of_total_emissions_{}.csv".format(scenario)
+    )
+    temp.to_latex(
+        "tables/heatmap_aux_share_of_total_emissions_{}.tex".format(scenario),
+        label="tab:heatmap_aux_share_of_total_emissions_{}".format(scenario),
+        caption="Heatmap data for emission reduction by pollutant in scenario {}.".format(
+            scenario
+        ),
+        float_format="{:0.2f}".format,
+    )
 
 
 # ---------------------------------------------------------------------------
 # heat map and annual data
 # ----------------------------------------------------------------------------
 pd.DataFrame({k: v.sum(axis=1) for k, v in d_annual.items()}).to_csv(
-    "tables/annual_emissions_all_scenarios_by_engine.csv"
+    "tables/annual_emissions_kg_all_scenarios_by_engine.csv"
 )
 pd.DataFrame(
     {k: v.groupby("Pollutant").sum().sum(axis=1) for k, v in d_annual.items()}
-).to_csv("tables/annual_emissions_all_scenarios_total.csv")
+).to_csv("tables/annual_emissions_kg_all_scenarios_total.csv")
 
 heatmap = {}
 for scenario in d_annual:
     d_annual[scenario].to_csv(
-        "tables/annual_emission_by_type_{}.csv".format(scenario)
+        "tables/annual_emission_kg_by_type_{}.csv".format(scenario)
     )
     ref = d_annual["2015_sq"].groupby("Pollutant").sum()  # .loc[pollutants]
     hm = d_annual[scenario].groupby("Pollutant").sum().div(ref.values).sub(1)
@@ -251,6 +288,18 @@ for scenario in d_annual:
         "figures/results/heatmap_emission_reduction_{}.pdf".format(scenario),
         bbox_inches="tight",
     )
+    heatmap[scenario].to_csv(
+        "tables/heatmap_emission_reduction_{}.csv".format(scenario)
+    )
+    heatmap[scenario].to_latex(
+        "tables/heatmap_emission_reduction_{}.tex".format(scenario),
+        label="tab:heatmap_emission_reduction_{}".format(scenario),
+        caption="Heatmap with share of auxiliary of total emissions {}".format(
+            scenario
+        ),
+        float_format="{:0.2f}".format,
+    )
+
 
 # co2 balance --------------------------
 co2 = {}
@@ -263,5 +312,30 @@ for scenario in d_annual:
         + d_annual[scenario].groupby("Pollutant").sum().loc["CO2 [kg]"]
     )
 total_co2_reduction = (
-    pd.DataFrame(co2).div(co2["2015_sq"].values, axis=0).sub(1)
+    pd.DataFrame(co2).div(co2["2015_sq"].values, axis=0).sub(1).mul(-100)
+)
+# fig, ax = plt.subplots(figsize=(6, 6))
+
+ax = total_co2_reduction.iloc[:, [2, 4]].plot(
+    kind="barh", color=["lightskyblue", "purple"]
+)
+lgd = ax.legend(
+    title="Scenario year",
+    labels=["2030", "2040"],
+    bbox_to_anchor=(1.02, 1),
+    loc="upper left",
+)
+ax.set_xlabel("Reduction compared to 2015_sq in %")
+plt.savefig(
+    "figures/results/total_CO2_reduction_compared_to_2015_sq.pdf",
+    bbox_inches="tight",
+)
+total_co2_reduction.to_csv(
+    "tables/total_CO2_reduction_compared_to_2015_sq.csv"
+)
+total_co2_reduction.to_latex(
+    "tables/total_CO2_reduction_compared_to_2015_sq.tex",
+    label="tab:total_CO2_reduction_compared_to_2015_sq",
+    caption="Total CO\textsubscript{2} reduction in 2030 and 2040 compared to 2015 in \%",
+    float_format="{:0.2f}".format,
 )
