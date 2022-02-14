@@ -99,7 +99,7 @@ def rasterize_points(
     resolution = config["resolution_lonlat"]
     # get the square box in LCC coordinates
     if crs == "EPSG:4326":
-        bbox = config["bounding_box_lonlat"]
+        bbox = config["bounding_box_cmaq"] # lonlat
     else:
         bbox = config["bounding_box_lcc"]
 
@@ -152,8 +152,8 @@ def rasterize_points(
         filepaths.sort()
         for file in filepaths:
             # print("Do file: {}".format(file))
-            # select only certain
-            if "20150107" in file:
+            # select only certain day
+            if "201" in file:
                 df_day = pd.read_csv(
                     file, index_col="datetime",
                     parse_dates=True,

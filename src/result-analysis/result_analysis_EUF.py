@@ -11,8 +11,9 @@ config[
     "intermediate_data"
 ] = "nextcloud-znes/KlimaSchiff/final_results/emissions"
 
+cost_path = "nextcloud-znes/KlimaSchiff/carbon_costs.xlsx"
 
-#
+
 # df_n = pd.read_csv(
 #     "/home/admin/klimaschiff/intermediate_data_new/2015_sq/ship_emissions/ship_emissions_20150107.csv",
 #     nrows=100000)
@@ -223,6 +224,7 @@ for scenario in scenarios:
         temp.loc["Propulsion"] + temp.loc["Electrical"]
     )
     temp = temp.loc[pollutants + ["Energy [J]"]]
+    temp.dropna(how="all", inplace=True)
     temp.index = [i.strip("[kg]") for i in temp.index]
     temp.index = [i.strip("[J]") for i in temp.index]
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -270,14 +272,34 @@ for scenario in d_annual:
     hm = d_annual[scenario].groupby("Pollutant").sum().div(ref.values).sub(1)
     hm.index = [i.replace(" [kg]", "") for i in hm.index]
     hm.index = [i.replace(" [J]", "") for i in hm.index]
-    hm.drop(["CH4", "GWP", "NPV [EUR]", "CO2 (Well to tank)"], inplace=True)
+    hm.drop(["CH4", "GWP", "NPV [EUR]", "CH4 (Well to tank)"], inplace=True)
+    WTT = [
+        "CO2 (Well to tank)",
+        "NOx (Well to tank)",
+        "PM (Well to tank)",
+        "Energy (Well to tank)",
+        "SOx (Well to tank)"]
     # hm = hm.round(2)
     heatmap[scenario] = hm
 
     fig, ax = plt.subplots(figsize=(10, 6))
-
     sns.heatmap(
-        heatmap[scenario],
+        hm.drop(WTT, axis=0),
+        cmap="YlGnBu_r",
+        cbar_kws={"label": "Deviation to SQ"},
+        annot=True,
+        ax=ax,
+        fmt=".1%",
+    )
+
+    plt.savefig(
+        "figures/results/heatmap_emission_reduction_{}.pdf".format(scenario),
+        bbox_inches="tight",
+    )
+    plt.clf()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(
+        hm.loc[WTT],
         cmap="YlGnBu_r",
         cbar_kws={"label": "Deviation to SQ"},
         annot=True,
@@ -285,9 +307,10 @@ for scenario in d_annual:
         fmt=".1%",
     )
     plt.savefig(
-        "figures/results/heatmap_emission_reduction_{}.pdf".format(scenario),
+        "figures/results/heatmap_wtt_emission_reduction_{}.pdf".format(scenario),
         bbox_inches="tight",
     )
+    plt.clf()
     heatmap[scenario].to_csv(
         "tables/heatmap_emission_reduction_{}.csv".format(scenario)
     )
@@ -317,14 +340,16 @@ total_co2_reduction = (
 # fig, ax = plt.subplots(figsize=(6, 6))
 
 ax = total_co2_reduction.iloc[:, [2, 4]].plot(
-    kind="barh", color=["lightskyblue", "purple"]
+    kind="barh", color=["lightskyblue", "purple"],
+    grid=True
 )
 lgd = ax.legend(
     title="Scenario year",
     labels=["2030", "2040"],
     bbox_to_anchor=(1.02, 1),
-    loc="upper left",
+    loc="upper left"
 )
+ax.set_xlim(0, 100)
 ax.set_xlabel("Reduction compared to 2015_sq in %")
 plt.savefig(
     "figures/results/total_CO2_reduction_compared_to_2015_sq.pdf",
@@ -339,3 +364,51 @@ total_co2_reduction.to_latex(
     caption="Total CO\textsubscript{2} reduction in 2030 and 2040 compared to 2015 in \%",
     float_format="{:0.2f}".format,
 )
+
+
+
+# costs ----------------------------------------------------------------------
+costs = pd.read_excel(
+    os.path.join(os.path.expanduser("~"), cost_path),
+    sheet_name="summary",index_col=0
+)
+costs.rename(index={"PM2.5": "PM", "NOX": "NOx", "SO2": "SOx"}, inplace=True)
+costs_d = {}
+for scenario in scenarios:
+    temp = d_annual[scenario].groupby(["Engine", "Pollutant"]).sum()
+    temp = temp.sum(level=1)
+    temp.index = [i.replace(" [kg]", "") for i in temp.index]
+    temp.index = [i.replace(" [J]", "") for i in temp.index]
+    temp = temp.loc[["NMVOC", "SOx", "PM", "NOx", "CO2"], "All"]
+    temp = temp.div(1000) # kg -> t
+
+
+    costs_d[(scenario, "NOx")] = dict(temp.loc["NOx"] * costs.loc["NOx"])
+    costs_d[scenario, "PM"] = dict(temp.loc["PM"] * costs.loc["PM"])
+    costs_d[scenario, "SOx"] = dict(temp.loc["SOx"] * costs.loc["SOx"])
+    costs_d[scenario, "NMVOC"] = dict(temp.loc["NMVOC"] * costs.loc["NMVOC"])
+    costs_d[scenario, "CO2 (UBA low)"] = dict(temp.loc["CO2"] * costs.loc["CO2 (UBA low)"])
+    costs_d[scenario, "CO2 (UBA high)"] = dict(temp.loc["CO2"] * costs.loc["CO2 (UBA high)"])
+    costs_d[scenario, "CO2 (ETS low)"] = dict(temp.loc["CO2"] * costs.loc["CO2 (ETS low)"])
+    costs_d[scenario, "CO2 (ETS high)"] = dict(temp.loc["CO2"] * costs.loc["CO2 (ETS high)"])
+df = pd.DataFrame(costs_d).T
+df.to_csv("tables/costs.csv")
+df = df.div(1e9)
+df.sort_index(inplace=True)
+df_select = df.loc[
+    ["2015_sq", "2030_high", "2040_high"],
+    ["CO2 (UBA low)", "CO2 (UBA high)", "CO2 (ETS low)", "CO2 (ETS high)"],:]
+
+data = df_select.stack().reset_index()
+data.columns = ["Scenario", "Pollutant", "Level", "Costs in Billion Euro"]
+g = sns.catplot(x="Pollutant", y="Costs in Billion Euro",
+                hue="Scenario", col="Level",
+                data=data, kind="bar",
+                height=4, aspect=.7, dodge=True,
+                palette=sns.color_palette("tab20"))
+axes = g.axes.flatten()
+g.set_xticklabels(rotation=45)
+axes[0].set_title("Low")
+axes[1].set_title("Medium")
+axes[2].set_title("High")
+plt.savefig("CO2_costs.pdf")
