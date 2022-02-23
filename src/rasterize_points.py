@@ -99,7 +99,7 @@ def rasterize_points(
     resolution = config["resolution_lonlat"]
     # get the square box in LCC coordinates
     if crs == "EPSG:4326":
-        bbox = config["bounding_box_cmaq"] # lonlat
+        bbox = config["bounding_box_lonlat"] # lonlat
     else:
         bbox = config["bounding_box_lcc"]
 
