@@ -236,7 +236,7 @@ def rasterize_points(
         }
         da.to_netcdf(
             os.path.join(
-                result_data, emission_types[emission_type] + ".nc"
+                result_data, emission_types[emission_type] + "_big.nc"
             ),  # write to shorter file name
             encoding={
                 "lat": {"dtype": "float32"},
