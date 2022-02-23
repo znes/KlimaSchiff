@@ -411,4 +411,22 @@ g.set_xticklabels(rotation=45)
 axes[0].set_title("Low")
 axes[1].set_title("Medium")
 axes[2].set_title("High")
-plt.savefig("CO2_costs.pdf")
+plt.savefig("figures/CO2_costs.pdf",   bbox_inches="tight",)
+
+df_select_2 = df.loc[
+    ["2015_sq", "2030_high", "2040_high"],
+    ["NOx", "PM", "SOx"], :]
+
+data = df_select_2.stack().reset_index()
+data.columns = ["Scenario", "Pollutant", "Level", "Costs in Billion Euro"]
+g = sns.catplot(x="Pollutant", y="Costs in Billion Euro",
+                hue="Scenario", col="Level",
+                data=data, kind="bar",
+                height=4, aspect=.7, dodge=True,
+                palette=sns.color_palette("tab20"))
+axes = g.axes.flatten()
+g.set_xticklabels(rotation=45)
+axes[0].set_title("Low")
+axes[1].set_title("Medium")
+axes[2].set_title("High")
+plt.savefig("figures/pollutant_costs.pdf",   bbox_inches="tight",)
