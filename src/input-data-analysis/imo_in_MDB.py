@@ -3,7 +3,50 @@ import os
 import pandas as pd
 import numpy as np
 
-from src.preprocess import create_ship_dataframe
+def create_ship_dataframe():
+    type_mapper = pd.read_excel(
+        os.path.join("emission_model", "ship_type_fsg_mdb_mapper.xlsx"),
+        index_col=0,
+    )
+
+    name_mapper = pd.read_excel(
+        os.path.join("emission_model", "ship_type_fsg_mdb_mapper.xlsx"),
+        sheet_name="FSG_ShipType",
+        index_col=0,
+    ).to_dict()["fsg_name"]
+
+    ships = pd.read_csv(
+        os.path.join(
+            os.path.expanduser("~"),
+            "klimaschiff",
+            "raw_data",
+            "MDB-data-complete-area.csv",
+        )
+    )
+
+    def add_type(row,):
+        # import pdb; pdb.set_trace()
+        if row["TYPE"] == "0":
+            stype = 9
+            sname = "Diverse"
+        else:
+            stype = type_mapper.at[
+                row["TYPE"], "fsg_no",
+            ]
+            sname = name_mapper[stype]
+
+        return (
+            stype,
+            sname,
+        )
+
+    ships[["FSGTYPE", "Class",]] = ships.apply(
+        add_type, axis=1, result_type="expand",
+    )
+    ships = ships.drop(ships.loc[ships["Class"] == "rausnehmen"].index, axis=0)
+    ships = ships.drop(ships.loc[ships["BUILT"] > 2015].index, axis=0)
+
+    return ships
 
 ships = create_ship_dataframe()
 
@@ -25,7 +68,7 @@ for file in files:
                 "raw_data",
                 "processed",
                 file
-                ), nrows=10000
+                )
             )
 
         month = df.imo.unique()
