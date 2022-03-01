@@ -20,7 +20,7 @@ with open(imopath, "rb") as file:
 
 files = os.listdir(datapath)
 speed_by_shiptype = {}
-for file in files[0:3]:
+for file in files:
     df = pd.read_csv(
         PurePath(datapath, file), index_col=[0], parse_dates=True, dtype={"imo": int})
     for k, v in ships_per_ship_class.items():
