@@ -30,5 +30,4 @@ for file in files[0:3]:
 
 speed_by_shiptype_df = pd.DataFrame(
     speed_by_shiptype).T
-speed_by_shiptype_df.reset_index(level=0)
 speed_by_shiptype_df.groupby(level=1).mean().to_csv("time_average_speed_per_shiptype.csv")
