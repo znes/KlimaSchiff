@@ -25,16 +25,16 @@ for file in files:
                 "raw_data",
                 "processed",
                 file
-                )
+                ), nrows=10000
             )
 
-    month = df.imo.unique()
+        month = df.imo.unique()
 
-    len([i for i in np.isin(month, imos) if i==True]) / len(month)
-    mask = np.isin(month, imos)
-    number, share = len(month), (1 -len(month[mask]) / len(month)) * 100
+        len([i for i in np.isin(month, imos) if i==True]) / len(month)
+        mask = np.isin(month, imos)
+        number, share = len(month), (1 - len(month[mask]) / len(month)) * 100
 
-    l.append((number, share))
+        l.append((file, number, share))
 
-df = pd.DataFrame(l, columns=["Unique_imos", "Not in"])
+df = pd.DataFrame(l, columns=["File", "Unique_imos", "Not in"])
 df.to_csv("imo_in_MDB_check.csv")
