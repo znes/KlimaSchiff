@@ -48,24 +48,60 @@ plt.text(20, 52, "Helcom", color="red")
 plt.savefig("figures/{}-emissions.pdf".format(pollutant))
 
 
-# data_path = os.path.join(
-#     os.path.expanduser("~"),
-#     config["intermediate_data"],
-#     #"2015_sq",
-#     "ship_routes"
-# )
-#
-# file = os.path.join(
-#     data_path,
-#     os.listdir(data_path)[1])
-#
-# df = pd.read_csv(file)
-# df.lon.max()
-# geometry = gpd.points_from_xy(df.lon, df.lat)
-# gdf = gpd.GeoDataFrame(df, geometry=geometry)
+monthsum = pollutants.CO2_big.resample(time="1M").sum()
 
-#
-# m=folium.Map([54,10],zoom_start=5)
-# heat_data = [[point.xy[1][0], point.xy[0][0]] for point in gdf.geometry ]
-# plugins.HeatMap(heat_data, radius=2, blur=2).add_to(m)
-# m.save('heatmap.html')
+
+janjun = monthsum[[1, 7]]
+# fig, ax = plt.subplots()
+ax = janjun.plot(
+    x="lon",
+    y="lat",
+    col="time",
+    cmap=mpl.cm.RdYlBu_r,
+    norm=mpl.colors.LogNorm(
+        vmin=float(janjun.min()) + 100, vmax=float(janjun.max())
+    ),
+    cbar_kwargs={
+        # "orientation": "horizontal",
+        "label": "CO2 emissions in kg",
+        # "pad": 0.1,
+    },
+)
+month = {0: "January", 1: "July"}
+for i, ax in enumerate(ax.axes.flat):
+    ax.set_title(month[i])
+# ax.add_patch(Rectangle((-5, 48), 20, 20, fill=False, color="red"))
+# plt.title("June")
+plt.savefig("figures/monthly-emissions-janjul-raster.pdf")
+# plt.text(-3.5, 64, "Vesselfinder", color="red")
+# plt.text(20, 52, "Helcom", color="red")
+
+min_lon = 6
+min_lat = 53
+max_lon = 13
+max_lat = 58
+
+mask_lon = (monthsum.lon >= min_lon) & (monthsum.lon <= max_lon)
+mask_lat = (monthsum.lat >= min_lat) & (monthsum.lat <= max_lat)
+monthsum_sh = monthsum.where(mask_lon & mask_lat, drop=True)
+
+janjun = monthsum_sh[[1, 7]]
+# fig, ax = plt.subplots()
+ax = janjun.plot(
+    x="lon",
+    y="lat",
+    col="time",
+    cmap=mpl.cm.RdYlBu_r,
+    norm=mpl.colors.LogNorm(
+        vmin=float(janjun.min()) + 100, vmax=float(janjun.max())
+    ),
+    cbar_kwargs={
+        # "orientation": "horizontal",
+        "label": "CO2 emissions in kg",
+        # "pad": 0.1,
+    },
+)
+month = {0: "January", 1: "July"}
+for i, ax in enumerate(ax.axes.flat):
+    ax.set_title(month[i])
+plt.savefig("figures/monthly-emissions-janjul-raster_sh.pdf")

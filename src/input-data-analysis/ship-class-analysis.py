@@ -49,7 +49,8 @@ dwt_classes = {
     "Bulker": [(0, 35e3), (35e3, 45e3), (45e3, 120e3), (120e3, float("+inf"))],
     "MPV": [(0, 120e3), (120e3, float("+inf"))],
 }
-
+# a = ships[ships.Class=="Diverse"].groupby("TYPENAME").count()
+# (a / a.IMO.sum() * 100).IMO.to_csv("share_diverse.csv")
 # shiptype and weigth plot --------------------------------------------------
 ships[["NEWCLASS", "GT", "BUILT"]]
 cutter = [
@@ -120,6 +121,20 @@ ax.set_xlabel("Built year", size=14)
 plt.savefig("figures/age_structure_by_shiptype.pdf")
 
 # GWT mean
+import json
+
+with open("config.json") as file:
+    config = json.load(file)
+
+unique_imos = pd.read_csv(
+    os.path.join(
+        os.path.expanduser("~"), config["model_data"], "unique_imos.csv",
+    ),
+    index_col=0,
+)
+
+# remove ships from mdb which are not in vesselfinde or helcom data set 2015
+ships = ships.loc[ships.IMO.isin(unique_imos["0"])]
 
 gt_d = {}
 for k, cutter in gt_classes.items():
@@ -145,9 +160,10 @@ for k, cutter in dwt_classes.items():
 df_dwt = pd.DataFrame(dwt_d)
 df_dwt["Weighttype"] = "DWT"
 df_dwt.set_index("Weighttype", append=True, drop=True, inplace=True)
-combined =  pd.concat([df_dwt, df_gt])
+combined = pd.concat([df_dwt, df_gt])
 combined.to_csv("tables/number_of_ships_per_weightclass.csv")
 combined.fillna(0).astype("int").to_latex(
     "tables/number_of_ships_per_weightclass.tex",
     caption="Number of ships per shiptype and weightclass.",
-    label="tab:number_of_ships_per_weightclass")
+    label="tab:number_of_ships_per_weightclass",
+)

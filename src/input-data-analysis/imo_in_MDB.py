@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 
+
 def create_ship_dataframe():
     type_mapper = pd.read_excel(
         os.path.join("emission_model", "ship_type_fsg_mdb_mapper.xlsx"),
@@ -48,15 +49,16 @@ def create_ship_dataframe():
 
     return ships
 
+
 ships = create_ship_dataframe()
 
 imos = ships.IMO.unique()
 
-files = os.listdir(os.path.join(
-    os.path.expanduser("~"),
-    "klimaschiff",
-    "raw_data",
-    "processed"))
+files = os.listdir(
+    os.path.join(
+        os.path.expanduser("~"), "klimaschiff", "raw_data", "processed"
+    )
+)
 
 l = []
 for file in files:
@@ -67,13 +69,13 @@ for file in files:
                 "klimaschiff",
                 "raw_data",
                 "processed",
-                file
-                )
+                file,
             )
+        )
 
         month = df.imo.unique()
 
-        len([i for i in np.isin(month, imos) if i==True]) / len(month)
+        len([i for i in np.isin(month, imos) if i == True]) / len(month)
         mask = np.isin(month, imos)
         number, share = len(month), (1 - len(month[mask]) / len(month)) * 100
 

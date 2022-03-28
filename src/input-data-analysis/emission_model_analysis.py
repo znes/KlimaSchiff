@@ -23,12 +23,12 @@ shiptypes = set(
 )
 
 pollutants = df.columns[8:13].drop("CH4 [kg]")
-#pollutants = ["Energy [J]", "NMVOC [kg]"]
-#sns.set_style("darkgrid")
+# pollutants = ["Energy [J]", "NMVOC [kg]"]
+# sns.set_style("darkgrid")
 for shiptype in shiptypes:
     for pollutant in pollutants:
         if pollutant == "NOx [kg]":
-            #pollutant = "Energy [J]"
+            # pollutant = "Energy [J]"
             engine = "Propulsion"
             # shiptype = "Tanker SuezMax"
             plt.figure()
@@ -51,7 +51,7 @@ for shiptype in shiptypes:
                 x="Speed [m/second]",
                 y=pollutant,
                 label="Tier I",
-                ax=ax
+                ax=ax,
             )
             ax = sns.lineplot(
                 data=df.loc[idx[shiptype + " FS", "Electrical"]].reset_index(),
@@ -89,17 +89,25 @@ for shiptype in shiptypes:
 # ---------------------------------------------------------------------------
 speed_power_path = "nextcloud-znes/KlimaSchiff/fsg/input_lcpa/kW_pro_speed.csv"
 df = pd.read_csv(
-    os.path.join(os.path.expanduser("~"), speed_power_path), skiprows=10, index_col=[0,1])
+    os.path.join(os.path.expanduser("~"), speed_power_path),
+    skiprows=10,
+    index_col=[0, 1],
+)
 df = df.stack()
 df = df.to_frame()
 df.reset_index(inplace=True)
 df = df.rename(columns={0: "Power in kW", "level_2": "Speed in kn"})
 sns.set_style("darkgrid")
-ax = sns.relplot(data=df,
+ax = sns.relplot(
+    data=df,
     x="Speed in kn",
     y="Power in kW",
-    hue="Ship Type", col="Size Class", col_wrap=2,
-    kind="line", markers=True)
+    hue="Ship Type",
+    col="Size Class",
+    col_wrap=2,
+    kind="line",
+    markers=True,
+)
 plt.savefig(
-    "figures/speed_power_curves_by_shiptype.pdf",  
-    bbox_inches="tight",)
+    "figures/speed_power_curves_by_shiptype.pdf", bbox_inches="tight",
+)
