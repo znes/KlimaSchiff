@@ -34,7 +34,7 @@ for file in files:
     df["hour"] = df.index.hour
     df = df.groupby(["hour","imo"]).count().reset_index()
     for hour in range(0,24):
-        active_ships_per_hour[file, hour] = len(
+        active_ships_per_hour[int(re.sub('[^0-9]', '', file)), hour] = len(
             df[df.hour == hour].imo.unique()
         )
-df.to_csv("active_ships_per_hour.csv")
+pd.Series(active_ships_per_hour).to_csv("active_ships_per_hour.csv")
