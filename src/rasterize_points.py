@@ -99,7 +99,7 @@ def rasterize_points(
     resolution = config["resolution_lonlat"]
     # get the square box in LCC coordinates
     if crs == "EPSG:4326":
-        bbox = config["bounding_box_lonlat"] # lonlat
+        bbox = config["bounding_box_cmaq"] # lonlat
     else:
         bbox = config["bounding_box_lcc"]
 
@@ -236,7 +236,7 @@ def rasterize_points(
         }
         da.to_netcdf(
             os.path.join(
-                result_data, emission_types[emission_type] + "_big.nc"
+                result_data, emission_types[emission_type] + ".nc"
             ),  # write to shorter file name
             encoding={
                 "lat": {"dtype": "float32"},

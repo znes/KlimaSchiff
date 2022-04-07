@@ -37,6 +37,6 @@
   "bounding_box_lonlat": [-4, 50, 25, 65],
   "bounding_box_cmaq": [0.8, 51.3, 15.6, 59.3],
   "resolution_lcc": [4000, 4000],
-  "resolution_lonlat": [0.06, 0.09],
+  "resolution_lonlat": [0.02, 0.03],
   "drift_speed":0.51444
 }
