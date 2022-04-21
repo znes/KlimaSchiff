@@ -157,7 +157,6 @@ for age in geodf_sh.columns[2:11]:
 
 ds = xr.combine_by_coords([i.to_dataset() for i in pop_by_ageclass.values()])
 
-
 ds.to_netcdf(
     os.path.join(
         "/home/admin/nextcloud-znes/KlimaSchiff/population_data",

@@ -56,8 +56,8 @@ for file in files[0:4]:
         dtype={"imo": int},
     )
     df["hour"] = df.index.hour
-    df = df.groupby(["hour","imo"]).count().reset_index()
-    for hour in range(0,24):
+    df = df.groupby(["hour", "imo"]).count().reset_index()
+    for hour in range(0, 24):
         active_ships_per_hour[file, hour] = len(
             df[df.hour == hour].imo.unique()
         )
