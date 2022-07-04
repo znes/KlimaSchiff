@@ -60,7 +60,8 @@ scenario_path = os.path.join(
 
 df = pd.read_csv(scenario_path, index_col=0, skiprows=51)
 ax = df.T.plot(kind="bar", rot=45, color=sns.color_palette("tab20"), grid=True)
-ax.set_ylabel("Average speed in m/s")
+ax.set_xlabel("Speed Intervall in m/s")
+ax.set_ylabel("Share of time in %")
 plt.savefig(
     "figures/average_speed_per_type.pdf", bbox_inches="tight",
 )
