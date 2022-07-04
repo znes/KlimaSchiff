@@ -37,15 +37,16 @@ def map_imo_type(row):
     return [k for k,v in imos.items() if row["imo"] in v][0]
 def map_imo_anonym(row):
     return anonym_id_mapper[row["imo"]]
-compression_opts = dict(method='zip',
-                        archive_name=file.stem + ".csv")
+
 
 for file in p.iterdir():
-    df = pd.read_csv(file, nrows=10000, index_col=0)
+    df = pd.read_csv(file, index_col=0)
     df.drop(droplist, axis=1, inplace=True)
     df.insert(0, "type", df.apply(map_imo_type, axis=1))
     df.insert(0, "unique_id", df.apply(map_imo_anonym, axis=1))
     df.drop("imo", axis=1, inplace=True)
+    compression_opts = dict(method='zip',
+                            archive_name=file.stem + ".csv")
     df.to_csv(
         os.path.join(publication_path, file.stem + ".zip"),
         index=False,
