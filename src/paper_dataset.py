@@ -99,7 +99,7 @@ def map_imo_anonym(row):
 
 
 for file in p.iterdir():
-    df = pd.read_csv(file, nrows=1000, index_col=0)
+    df = pd.read_csv(file, index_col=0)
     df.drop(droplist, axis=1, inplace=True)
     df.insert(0, "Type", df.apply(map_imo_type, axis=1))
     df.insert(0, "Unique_ID", df.apply(map_imo_anonym, axis=1))
