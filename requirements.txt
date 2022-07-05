@@ -27,7 +27,7 @@ dask==2.30.0
 datacube==1.8.3
 datapackage==1.15.2
 decorator==4.4.2
-distributed==2.30.1
+distributed==2021.10.0
 et-xmlfile==1.1.0
 Fiona==1.8.20
 folium==0.12.1.post1
