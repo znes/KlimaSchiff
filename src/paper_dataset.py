@@ -8,7 +8,6 @@ from pathlib import PosixPath
 nice_type_names = pd.read_csv(
     "emission_model/short_long_name_mapper.csv", index_col=0
 ).to_dict()["short_name"]
-
 # create path for results
 publication_path = os.path.join(
     os.path.expanduser("~"), "klimaschiff", "publication"
@@ -91,15 +90,14 @@ droplist = [
 
 
 def map_imo_type(row):
-    return [nice_type_names[k] for k, v in imos.items() if row["imo"] in v][0]
-
+    return [nice_type_names[k] for k, v in imos.items() if row["imo"] in list(v)][0]
 
 def map_imo_anonym(row):
     return anonym_id_mapper[row["imo"]]
 
 
 for file in p.iterdir():
-    df = pd.read_csv(file, index_col=0)
+    df = pd.read_csv(file, nrows=100, index_col=0)
     df.drop(droplist, axis=1, inplace=True)
     df.insert(0, "Type", df.apply(map_imo_type, axis=1))
     df.insert(0, "Unique_ID", df.apply(map_imo_anonym, axis=1))
