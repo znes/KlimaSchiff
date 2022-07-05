@@ -23,7 +23,7 @@ contextily==1.1.0
 contextvars==2.4
 cryptography==2.9.2
 cycler==0.10.0
-dask==2.30.0
+dask==2021.10.0
 datacube==1.8.3
 datapackage==1.15.2
 decorator==4.4.2
