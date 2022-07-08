@@ -84,6 +84,8 @@ droplist = [
     "Electrical-GWP [kg]",
     "Propulsion-CH4 [kg]",
     "Electrical-CH4 [kg]",
+    "Propulsion-CH4 (Well to tank) [kg]",
+    "Electrical-CH4 (Well to tank) [kg]",
     "tdiff",
     "dist",
 ]
@@ -95,6 +97,24 @@ def map_imo_type(row):
 def map_imo_anonym(row):
     return anonym_id_mapper[row["imo"]]
 
+l = [
+    "Energy (Well to tank) [J]",
+    "CO2 (Well to tank) [kg]",
+    "SOx (Well to tank) [kg]",
+    "NOx (Well to tank) [kg]",
+    "PM (Well to tank) [kg]",
+    "Energy [J]",
+    "Fuel Consumption [kg]",
+    "CO2 [kg]",
+    "SOx [kg]",
+    "NOx [kg]",
+    "PM [kg]",
+    "BC [kg]",
+    "ASH [kg]",
+    "POA [kg]",
+    "CO [kg]",
+    "NMVOC [kg]",
+]
 
 for file in p.iterdir():
     df = pd.read_csv(file)
@@ -103,6 +123,10 @@ for file in p.iterdir():
     df.insert(0, "Type", df.apply(map_imo_type, axis=1))
     df.insert(0, "Unique_ID", df.apply(map_imo_anonym, axis=1))
     df.drop("imo", axis=1, inplace=True)
+    # reorder columns
+    new_col_order = [j for j in chain(*[["Propulsion-" + i, "Electrical-"+i] for i in l])]
+    df = df[list(df.columns[0:5]) + new_col_order]
+
     compression_opts = dict(method="zip", archive_name=file.stem + ".csv")
     df.to_csv(
         os.path.join(publication_path, file.stem + ".zip"),
