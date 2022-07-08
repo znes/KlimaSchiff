@@ -70,6 +70,7 @@ model = model[
     ]
 ]
 p = PosixPath("~/klimaschiff/publication/model.csv")
+model.columns  = [c.capitalize() for c in model.columns]
 model.to_csv(p.expanduser(), index=False)
 
 
@@ -121,12 +122,12 @@ for file in p.iterdir():
     df.drop(["Unnamed: 0"], axis=1, inplace=True)
     df.drop(droplist, axis=1, inplace=True)
     df.insert(0, "Type", df.apply(map_imo_type, axis=1))
-    df.insert(0, "Unique_ID", df.apply(map_imo_anonym, axis=1))
+    df.insert(0, "UniqueID", df.apply(map_imo_anonym, axis=1))
     df.drop("imo", axis=1, inplace=True)
     # reorder columns
     new_col_order = [j for j in chain(*[["Propulsion-" + i, "Electrical-"+i] for i in l])]
     df = df[list(df.columns[0:5]) + new_col_order]
-
+    df.columns = [c.capitalize() for c in df.columns]
     compression_opts = dict(method="zip", archive_name=file.stem + ".csv")
     df.to_csv(
         os.path.join(publication_path, file.stem + ".zip"),
