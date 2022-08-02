@@ -126,7 +126,6 @@ def calculate_emissions(config, columns=["CO2 [kg]"], overwrite=False):
     for filepath in filepaths:
         routes = read_routes(filepath)
 
-
         outputfile = os.path.join(
             outputpath,
             os.path.basename(filepath)
@@ -136,12 +135,12 @@ def calculate_emissions(config, columns=["CO2 [kg]"], overwrite=False):
 
         if Path(outputfile).is_file() and overwrite is False:
             logging.warning(
-                "Skip writing {} because already exists and overwrite is set to False.".format(outputfile)
+                "Skip writing {} because already exists and overwrite is set to False.".format(
+                    outputfile
+                )
             )
         else:
-            logging.info(
-                "Writing emissions to file {}.".format(outputfile)
-            )
+            logging.info("Writing emissions to file {}.".format(outputfile))
             emissions = interpolate_emissions(
                 routes,
                 ship_classes=[
@@ -161,14 +160,12 @@ def calculate_emissions(config, columns=["CO2 [kg]"], overwrite=False):
 
             df_emissions = pd.concat(emissions.values()).sort_index()
 
-
             filename = os.path.basename(filepath).replace(
                 "ship_routes", "ship_emissions"
             )
 
             compression_options = dict(method="zip", archive_name=filename)
             df_emissions.to_csv(outputfile, compression=compression_options)
-
 
         # # Write to zip file
         # zipped_ship_routes.write(

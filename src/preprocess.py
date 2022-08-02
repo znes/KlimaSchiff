@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 def reduce_ais_data(dataset, config, debug=False):
-    """ Read raw data files for specified dataset and remove obsolete columns, rename
-    and write to disk.
+    """ Read raw data files for specified dataset and remove
+    obsolete columns, rename and write to disk.
     """
 
     datapath = os.path.join(
@@ -70,13 +70,11 @@ def merge_ais_data(config):
         vessel_df = pd.read_csv(
             vessel_file,
             index_col=[0],
-            # nrows=10000000,
             parse_dates=True,
         )
         helcom_df = pd.read_csv(
             helcom_file,
             index_col=[0],
-            # nrows=10000000,
             parse_dates=True,
         )
 
@@ -154,7 +152,9 @@ def append_additional_emissions_to_lcpa(
     def _add_emissions(row, scenario, dataframe):
         """
         """
-        energy_factor = row["Energy [J]"] / 3.6e6 / 1e3  # J -> kWh -> kg (s. below)
+        energy_factor = (
+            row["Energy [J]"] / 3.6e6 / 1e3
+        )  # J -> kWh -> kg (s. below)
         fuel_factor = row["Fuel Consumption [kg]"]
         # assign PM value from LCPA tool, will only be replace for
         # "high" scenarios
@@ -187,58 +187,73 @@ def append_additional_emissions_to_lcpa(
 
             # auxiliary engine (medium speed diesel)
             if row.name[1] == "Electrical":
-                poa = 0.2 * energy_factor  * 0.45 # from Schwarzkopf 2016 (0.45 for efficiency losses)
-                co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
+                poa = (
+                    0.2 * energy_factor * 0.45
+                )  # from Schwarzkopf 2016 (0.45 for efficiency losses)
+                co = (
+                    (6.86 + 5.02) / 2 * fuel_factor / 1e3
+                )  # EEA 2021, p.28 avg. value from cruise and hotelling
                 nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3
+
             # main engine
             else:
-                poa = 0.2 * energy_factor # from Schwarzkopf 2016
+                poa = 0.2 * energy_factor * 0.45  # from Schwarzkopf 2016
 
-                # types slow speed medium diesel engine
+                # types slow speed diesel engine
                 if any(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-                    #nmvoc = 0.6 * energy_factor # cruise mode
-                    nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                    co = 3.24 * fuel_factor / 1e3  # EEA 2021 p.21
+                    co = (
+                        2.52 * fuel_factor / 1e3
+                    )  # EEA 2021 p.28 for cruise mode
+                    nmvoc = (
+                        1.33 * fuel_factor / 1e3
+                    )  # alternativ factor based on EMEP/EEA for cruise mode
 
                 else:
                     # types for medium speed diesel engine
-                    #nmvoc = 0.5 * energy_factor # cruise
-                    nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                    co = 4.45 * fuel_factor / 1e3
+                    co = 3.47 * fuel_factor / 1e3  # EEA 2021 cruise mode
+                    nmvoc = (
+                        1.52 * fuel_factor / 1e3
+                    )  # alternativ factor based on EMEP/EEA cruise mode
 
             return (bc, ash, poa, co, nmvoc, pm)
 
         else:
             if row.name[1] == "Electrical":
-                ash = 0.02 * 0.001 * fuel_factor # Schwarzkopf 2021
-                poa = 0.2 * energy_factor * 0.45 # from Schwarzkopf 2016  (0.45 for efficiency losses)
-                co = (6.86 + 5.02) / 2 * fuel_factor / 1e3  # EEA 2021, p.28 avg. value from cruise and hotelling
-                nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3 # EEA
-                bc = (0.085 + 0.054) / 2 * fuel_factor / 1e3 # EEA
+                ash = 0.02 * 0.001 * fuel_factor  # Schwarzkopf 2021
+                poa = (
+                    0.2 * energy_factor * 0.45
+                )  # from Schwarzkopf 2016  (0.45 for efficiency losses)
+                co = (
+                    (6.86 + 5.02) / 2 * fuel_factor / 1e3
+                )  # EEA 2021, p.28 avg. value from cruise and hotelling
+                nmvoc = (2.6 + 2.04) / 2 * fuel_factor / 1e3  # EEA
+                bc = (0.085 + 0.054) / 2 * fuel_factor / 1e3  # EEA
             else:
-                poa = 0.2 * energy_factor * 0.4 # from Schwarzkopf 2016  (0.4 for efficiency losses)
+                poa = (
+                    0.2 * energy_factor * 0.45
+                )  # from Schwarzkopf 2016  (0.4 for efficiency losses)
                 ash = 0.02 * 0.001 * fuel_factor
 
                 if any(
                     i in row.name[0]
                     for i in ["Bulker", "Tanker", "Container", "Car", "MPV"]
                 ):
-
-                    #nmvoc = 0.6 * energy_factor # cruise mode
-                    nmvoc = 1.64 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                    co = 3.24 * fuel_factor / 1e3  # EEA 2021 p.21
-                    bc = 0.0481 * fuel_factor / 1e3
+                    nmvoc = (
+                        1.33 * fuel_factor / 1e3
+                    )  # alternativ factor based on EMEP/EEA
+                    co = 2.52 * fuel_factor / 1e3  # EEA 2021 p.21
+                    bc = 0.0327 * fuel_factor / 1e3
 
                 else:
                     # types for medium speed diesel engine
-                    #nmvoc = 0.5 * energy_factor # cruise
-                    nmvoc = 1.86 * fuel_factor / 1e3 # alternativ factor based on EMEP/EEA
-                    co = 4.45 * fuel_factor / 1e3
-                    bc = 0.0484 * fuel_factor / 1e3
-
+                    nmvoc = (
+                        1.52 * fuel_factor / 1e3
+                    )  # alternativ factor based on EMEP/EEA
+                    co = 3.47 * fuel_factor / 1e3
+                    bc = 0.0329 * fuel_factor / 1e3
 
             return (bc, ash, poa, co, nmvoc, pm)
 

@@ -22,6 +22,11 @@ from rasterio.enums import MergeAlg
 from rioxarray.rioxarray import affine_to_coords
 from rasterio.features import rasterize
 
+# set cache for gdal to 3 times of default (which is 5% of max memory)
+import gdal
+
+default_cache_max = gdal.GetCacheMax()
+gdal.SetCacheMax(int(3 * default_cache_max))
 
 logger = logging.getLogger(__name__)
 # from geocube.api.core import make_geocube
@@ -70,15 +75,11 @@ def plot_array(array, lower=0, upper=3000):
 
 def rasterize_points(
     config=None,
-    emission_types={
-        "CO2 [kg]": "CO2",
-        "NOx [kg]": "NOx",
-
-    },
+    emission_types={"CO2 [kg]": "CO2", "NOx [kg]": "NOx",},
     # resolution=(-0.03, 0.05),
     # bbox=[-4, 50, 25, 65],
-    #crs = "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=0 +x_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
-    crs = "EPSG:4326"
+    # crs = "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=55 +lon_0=10 +y_0=0 +x_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
+    crs="EPSG:4326",
 ):
     """
     Parameter
@@ -99,7 +100,7 @@ def rasterize_points(
     resolution = config["resolution_lonlat"]
     # get the square box in LCC coordinates
     if crs == "EPSG:4326":
-        bbox = config["bounding_box_lonlat"]
+        bbox = config["bounding_box_cmaq"]  # lonlat
     else:
         bbox = config["bounding_box_lcc"]
 
@@ -120,7 +121,6 @@ def rasterize_points(
 
     if not os.path.exists(result_data):
         os.makedirs(result_data)
-
 
     out_crs = "EPSG:4326"
     bounding_box = box(bbox[0], bbox[1], bbox[2], bbox[3])
@@ -147,17 +147,18 @@ def rasterize_points(
         logging.info(
             "Rasterizing emissions for type: {}.".format(emission_type)
         )
-        emissions_per_day = {}
+        emissions_per_hour = {}
         timestamps = []
         filepaths.sort()
         for file in filepaths:
             # print("Do file: {}".format(file))
-            # select only certain
-            if "20150107" in file:
+            # select only certain day
+            if "20" in file:
                 df_day = pd.read_csv(
-                    file, index_col="datetime",
+                    file,
+                    index_col="datetime",
                     parse_dates=True,
-                    compression='zip'
+                    compression="zip",
                 )  # , nrows=1000000)
 
                 # add both engine types
@@ -194,7 +195,7 @@ def rasterize_points(
                     # ].dayofyear - 1) * 24 + hour # -1 to start with 0
                     timestamp = df_hour.index[0].strftime("%Y-%m-%d-%H")
                     timestamps.append(timestamp)
-                    emissions_per_day[timestamp] = arr
+                    emissions_per_hour[timestamp] = arr
             else:
                 logging.info("Filepath {} skipped, due to if.".format(file))
 
@@ -203,7 +204,7 @@ def rasterize_points(
 
         # import pdb; pdb.set_trace()
         da = xr.DataArray(
-            [i for i in emissions_per_day.values()],
+            [i for i in emissions_per_hour.values()],
             dims=["time", "lat", "lon",],
             coords=[
                 np.array(range(0, len(timestamps))),
