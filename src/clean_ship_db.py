@@ -1,3 +1,8 @@
+"""
+This script cleans the Ship-DB table, as this file is not publicly available
+this code can ignore. If the database is available, the `path` needs to be
+adapted to the folder where this file is located.
+"""
 import os
 
 import pandas as pd

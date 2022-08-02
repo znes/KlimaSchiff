@@ -7,27 +7,6 @@ import seaborn as sns
 with open("config.json") as file:
     config = json.load(file)
 
-config[
-    "intermediate_data"
-] = "nextcloud-znes/KlimaSchiff/result_data/emissions"
-
-
-#
-# df_n = pd.read_csv(
-#     "/home/admin/klimaschiff/intermediate_data_new/2015_sq/ship_emissions/ship_emissions_20150107.csv",
-#     nrows=100000)
-# df_o = pd.read_csv(
-#     "/home/admin/klimaschiff/intermediate_data/2015_sq/ship_emissions/ship_emissions_20150107.csv",
-#     nrows=100000)
-# df_n[["Propulsion-NMVOC [kg]", "Electrical-NMVOC [kg]"]].sum().sum() / df_o[["Propulsion-NMVOC [kg]", "Electrical-NMVOC [kg]"]].sum().sum()
-# df_n[["Propulsion-CO [kg]", "Electrical-CO [kg]"]].sum().sum() / df_o[["Propulsion-CO [kg]", "Electrical-CO [kg]"]].sum().sum()
-# df_n[["Propulsion-BC [kg]", "Electrical-BC [kg]"]].sum().sum() / df_o[["Propulsion-BC [kg]", "Electrical-BC [kg]"]].sum().sum()
-# pd.concat([df_o.sum(), df_n.sum()], axis=1)
-
-# df = pd.read_csv(
-#     os.path.join(scenario_path, "total_emissions_by_type_and_day.csv",),
-#     parse_dates=True,
-# )
 
 # df_m = df.unstack(level=1).resample("M").sum().unstack().unstack(level=0).swaplevel(0,1)
 

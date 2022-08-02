@@ -37,7 +37,5 @@ The software allows to do the following things:
 * calculate emissions for the ships routes
 * rasterize the emissions and write to netcdf
 
-Everyone of the steps depends on the step before it. Therefore, to use the code,
-you will need the raw data sets used.  
-
-sudo usermod -aG sudo klimaschiff
+Every of these steps depends on the step before it. Therefore, to use the code,
+you will need the raw data sets.  
