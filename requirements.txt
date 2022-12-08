@@ -10,7 +10,7 @@ branca==0.4.2
 cached-property==1.5.2
 cachetools==4.1.1
 Cartopy==0.19.0.post1
-certifi==2020.11.8
+certifi==2022.12.7
 cffi==1.14.0
 cftime==1.2.1
 chardet==5.0.0
