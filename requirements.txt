@@ -21,7 +21,7 @@ cligj==0.7.0
 cloudpickle==1.6.0
 contextily==1.1.0
 contextvars==2.4
-cryptography==2.9.2
+cryptography==39.0.1
 cycler==0.10.0
 dask==2.30.0
 datacube==1.8.3
